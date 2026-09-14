@@ -1036,7 +1036,11 @@ async function translateBatch(texts){
       const d=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error(d.error||`HTTP ${r.status}`);
       const out=Array.isArray(d.translations)?d.translations:[];
-      missing.forEach((t,i)=>{translationCache[t]=String(out[i]??t);});
+      missing.forEach((t,i)=>{
+        const candidate=String(out[i]??'').trim();
+        const bad=/invalid source language|example:\s*langpair|almost all languages supported|translation error|\bhttp\s*\d{3}\b/i.test(candidate);
+        translationCache[t]=(!candidate||bad)?t:candidate;
+      });
     }catch(_){
       missing.forEach(t=>{translationCache[t]=t;});
     }
