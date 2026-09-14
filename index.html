@@ -23,6 +23,7 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:17px;margin:0 0 6px}.count{font-si
 .form{display:grid;gap:12px}.label{font-size:13px;font-weight:800;margin-bottom:6px}input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit}
 .types{display:flex;flex-wrap:wrap;gap:8px}.check{display:flex;align-items:center;gap:7px;padding:9px 11px;background:#f8fafc;border:1px solid var(--line);border-radius:12px;font-size:13px}.check input{width:auto}
 .status{padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:13px;margin-bottom:12px}.err{color:#b42318;background:#fff5f5;border-color:#fecdca}
+.test-panel{background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:12px}.test-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.test-title{font-size:16px;font-weight:850}.test-progress{font-size:12px;color:var(--muted);margin-top:7px}.test-list{margin-top:10px;display:grid;gap:7px}.test-row{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:center;padding:9px 10px;background:#fff;border:1px solid var(--line);border-radius:10px}.test-row.ok{border-color:#c7ead8}.test-row.warn{border-color:#f3dfad}.test-row.bad{border-color:#fecdca}.test-name{font-size:13px;font-weight:750}.test-detail{font-size:11px;color:var(--muted);margin-top:2px}.test-badge{font-size:11px;font-weight:800}
 .bottom{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fffffff4;backdrop-filter:blur(16px);border-top:1px solid var(--line)}.navs{max-width:780px;margin:auto;display:grid;grid-template-columns:repeat(3,1fr);padding:8px 10px calc(8px + env(safe-area-inset-bottom));gap:4px}.nav{background:transparent;border:0;border-radius:13px;padding:8px 5px;font-size:12px}.nav.active{background:var(--soft);font-weight:850}
 @media(min-width:700px){.content{padding:22px}.top{padding-left:22px;padding-right:22px}}
 </style>
@@ -41,6 +42,22 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:17px;margin:0 0 6px}.count{font-si
 <script>
 const API="https://rspeslnhsvkjremawtcd.supabase.co/functions/v1/news-v22";
 const API_TIMEOUT=15000;
+let autoTestState={running:false,done:0,total:0,results:[]};
+
+const AUTO_TESTS=[
+  {name:"NHL 全部",sport:"冰球",league:"NHL",contentTypes:["全部"],hours:24},
+  {name:"MLB 比賽結果",sport:"棒球",league:"MLB",contentTypes:["比賽結果"],hours:72},
+  {name:"NPB 比賽結果",sport:"棒球",league:"NPB",contentTypes:["比賽結果"],hours:72},
+  {name:"CPBL 比賽結果",sport:"棒球",league:"CPBL",contentTypes:["比賽結果"],hours:72},
+  {name:"NBA 全部",sport:"籃球",league:"NBA",contentTypes:["全部"],hours:24},
+  {name:"F1 賽程",sport:"賽車",league:"F1",contentTypes:["賽程"],hours:72},
+  {name:"英超 比賽結果",sport:"足球",league:"英超",contentTypes:["比賽結果"],hours:72},
+  {name:"ATP 排名",sport:"網球",league:"ATP",contentTypes:["排名"],hours:72},
+  {name:"LPL 全部",sport:"電競",league:"LPL",contentTypes:["全部"],hours:72},
+  {name:"VCT 全部",sport:"電競",league:"VCT",contentTypes:["全部"],hours:72},
+  {name:"CS2 全部",sport:"電競",league:"CS2",contentTypes:["全部"],hours:72},
+  {name:"Dota 2 全部",sport:"電競",league:"Dota 2",contentTypes:["全部"],hours:72}
+];
 
 const SPORTS=["棒球","籃球","足球","網球","賽車","羽球","桌球","排球","冰球","高爾夫","拳擊","MMA","田徑","游泳","體操","自行車","電競","橄欖球","美式足球","手球","曲棍球","滑雪","射箭","擊劍","舉重","柔道","跆拳道","馬術","三鐵"];
 
@@ -832,6 +849,35 @@ function settings(){
 
   </div>
 
+  <div class="card">
+    <div class="test-head">
+      <div>
+        <div class="test-title">🧪 自動測試模式</div>
+        <div class="muted" style="margin-top:4px">一次測試多個運動、聯盟與內容類型，不會修改你的日報設定。</div>
+      </div>
+      <button class="btn secondary" id="autoTestBtn" ${autoTestState.running?"disabled":""}>
+        ${autoTestState.running?"測試中…":"開始測試"}
+      </button>
+    </div>
+    <div class="test-progress">
+      ${autoTestState.running
+        ?`正在測試 ${autoTestState.done}/${autoTestState.total}`
+        :autoTestState.results.length
+          ?`上次測試完成：${autoTestState.results.filter(x=>x.status==="ok").length} 通過、${autoTestState.results.filter(x=>x.status==="warn").length} 警告、${autoTestState.results.filter(x=>x.status==="bad").length} 失敗`
+          :"建議每次更換新聞 API 後先跑一次。"}
+    </div>
+    ${autoTestState.results.length?`
+      <div class="test-list">
+        ${autoTestState.results.map(x=>`
+          <div class="test-row ${x.status}">
+            <div>${x.status==="ok"?"✅":x.status==="warn"?"⚠️":"❌"}</div>
+            <div><div class="test-name">${esc(x.name)}</div><div class="test-detail">${esc(x.detail)}</div></div>
+            <div class="test-badge">${x.status==="ok"?"PASS":x.status==="warn"?"WARN":"FAIL"}</div>
+          </div>
+        `).join("")}
+      </div>`:""}
+  </div>
+
   <div id="form">
     ${formHtml()}
   </div>
@@ -893,6 +939,65 @@ function settings(){
   `;
 }
 
+function autoTestResultsHtml(){
+  if(!autoTestState.results.length)return "";
+  return autoTestState.results.map(x=>`${x.status}:${x.name}:${x.detail}`).join("\n");
+}
+
+async function runAutoTests(){
+  if(autoTestState.running)return;
+  autoTestState={running:true,done:0,total:AUTO_TESTS.length,results:[]};
+  status="自動測試開始：不會修改你的日報設定…";
+  render();
+
+  const testSections=AUTO_TESTS.map((x,i)=>({
+    id:`auto-test-${Date.now()}-${i}`,
+    name:x.name,
+    sport:x.sport,
+    league:x.league,
+    contentTypes:x.contentTypes,
+    hours:x.hours
+  }));
+
+  try{
+    const d=await fetchNewsBatch(testSections);
+    const returned=Array.isArray(d.items)?d.items:[];
+    const errors=Array.isArray(d.errors)?d.errors:[];
+    const results=[];
+
+    for(const section of testSections){
+      const safe=normalizeSection(section);
+      const own=returned.filter(n=>String(n.sectionId||"")===String(safe.id));
+      const mapped=own.length
+        ? own
+        : returned.filter(n=>String(n.sport||"")===safe.sport && (safe.league==="全部" || String(n.league||"")===safe.league));
+      const selected=(safe.contentTypes||[]).filter(x=>x!=="全部");
+      const typed=selected.length?mapped.filter(n=>selected.some(t=>matchesType(n,t))):mapped;
+      const wrongRoute=own.filter(n=>String(n.sport||"")!==safe.sport || (safe.league!=="全部" && String(n.league||"")!==safe.league));
+      const sourceMeta=errors.length?"部分來源回應異常":"API 正常";
+
+      let status="ok",detail=`${typed.length} 則符合條件；${sourceMeta}`;
+      if(wrongRoute.length){status="bad";detail=`發現 ${wrongRoute.length} 則分區路由錯誤，預期 ${safe.sport}/${safe.league}`;}
+      else if(mapped.length===0){status="warn";detail=`API 有回應，但目前沒有符合條件的新聞；${sourceMeta}`;}
+      else if(selected.length && typed.length!==mapped.length){status="bad";detail=`內容類型過濾失效：${mapped.length} 則中只有 ${typed.length} 則符合 ${selected.join("、")}`;}
+      else if(errors.length){status="warn";detail=`${typed.length} 則符合條件；${sourceMeta}`;}
+      results.push({name:safe.name,status,detail});
+      autoTestState.done++;
+    }
+    autoTestState.results=results;
+    const bad=results.filter(x=>x.status==="bad").length;
+    const warn=results.filter(x=>x.status==="warn").length;
+    status=bad?`自動測試完成：${bad} 個失敗、${warn} 個警告`:`自動測試完成：${results.length-warn} 個通過、${warn} 個警告`;
+  }catch(e){
+    autoTestState.results=[{name:"整體 API",status:"bad",detail:String(e?.message||e)}];
+    autoTestState.done=autoTestState.total;
+    status=`自動測試失敗：${String(e?.message||e)}`;
+  }finally{
+    autoTestState.running=false;
+    render();
+  }
+}
+
 function render(){
 
   main.innerHTML=
@@ -952,6 +1057,11 @@ function wire(){
   }
 
   bindTypeHandlers();
+
+  const autoTestBtn=document.getElementById("autoTestBtn");
+  if(autoTestBtn && !autoTestBtn.disabled){
+    autoTestBtn.onclick=runAutoTests;
+  }
 
   const saveBtn=document.getElementById("save");
 
