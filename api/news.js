@@ -184,17 +184,32 @@ const TYPE = {
 const LOW_VALUE=/\b(prediction|predictions|preview|odds|recap|roundup|opinion|column|guide|explainer|power ranking|what to know|best of|top stories)\b|預測|前瞻|回顧|盤點|評論|專欄|指南|懶人包/i;
 
 function clean(s=''){return String(s).replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/<!\[CDATA\[|\]\]>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim();}
-function parseDate(v){if(!v)return new Date().toISOString(); const d=new Date(v); return Number.isFinite(d.getTime())?d.toISOString():new Date().toISOString();}
+function parseDate(v){if(!v)return ''; const d=new Date(v); return Number.isFinite(d.getTime())?d.toISOString():'';}
 function norm(s){return clean(s).toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').replace(/\b(the|a|an|and|of|to|in|on|for|with|news|update|latest|breaking|official|report|reports|sport|sports)\b/g,' ').replace(/\s+/g,' ').trim().slice(0,180);}
 function classify(title){let hits=Object.entries(TYPE).filter(([,r])=>r.test(title)).map(([k])=>k);if(hits.includes('傷勢更新'))hits=hits.filter(x=>x!=='受傷');if(hits.includes('世界／聯盟紀錄'))hits=hits.filter(x=>x!=='生涯紀錄');return hits.length?hits:['其他重要新聞'];}
+
+function selectedTypes(section){
+  const raw=section?.types ?? section?.contentTypes ?? section?.selectedTypes ?? section?.type;
+  if(Array.isArray(raw)) return raw.filter(Boolean).map(String);
+  if(typeof raw==='string' && raw.trim()) return [raw.trim()];
+  return ['全部'];
+}
+function typeAccept(title,section){
+  const wanted=selectedTypes(section);
+  if(!wanted.length || wanted.includes('全部')) return true;
+  const hits=classify(title);
+  return wanted.some(t=>hits.includes(t));
+}
 function parseRss(xml,lang){const out=[];const items=String(xml).match(/<item>[\s\S]*?<\/item>/gi)||[];for(const item of items){const m=(tag)=>{const x=item.match(new RegExp(`<${tag}(?:[^>]*)>([\\s\\S]*?)<\\/${tag}>`,'i'));return x?clean(x[1]):''};const title=m('title');const link=m('link')||((item.match(/<link>([^<]+)/i)||[])[1]||'');const pub=m('pubDate')||m('published')||m('updated');const sm=item.match(/<source\b([^>]*)>([\s\S]*?)<\/source>/i);const source=sm?clean(sm[2]):'Google News';const su=sm?((sm[1].match(/\burl=[\"']([^\"']+)/i)||[])[1]||''):'';if(title&&link)out.push({title,url:link,sourceName:source,sourceUrl:su,publishedAt:parseDate(pub),language:lang});}return out;}
 async function fetchText(url,ms=4500){const ac=new AbortController();const timer=setTimeout(()=>ac.abort(),ms);try{const r=await fetch(url,{signal:ac.signal,headers:{'user-agent':'SportsDaily/7.0','accept':'application/rss+xml,application/xml,text/xml'}});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.text();}finally{clearTimeout(timer);}}
 function googleUrl(q,market){const [lang,cc]=market.split('-');return `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=${encodeURIComponent(market)}&gl=${cc}&ceid=${cc}:${lang}`;}
 function queryFor(section,cfg,batchIndex=0,useSites=true){
   const league=section.league||'全部';
   const sport=section.sport||'棒球';
-  const terms=league!=='全部'?(LEAGUE[league]||[league]):([sport,...(SPORT_LEAGUES[sport]||[])]);
-  const t=terms.slice(0,8).map(x=>`\"${x}\"`).join(' OR ');
+  const terms=league!=='全部'?(LEAGUE[league]||[league]):[sport,...(SPORT_LEAGUES[sport]||[])];
+  const start=(Number(batchIndex)||0)*8;
+  const batchTerms=terms.slice(start,start+8);
+  const t=(batchTerms.length?batchTerms:terms.slice(0,8)).map(x=>`\"${x}\"`).join(' OR ');
   let domains=[];
   if(ESPORTS_SITES[league]) domains=ESPORTS_SITES[league];
   else if(sport==='電競') domains=Object.values(ESPORTS_SITES).flat();
@@ -234,27 +249,35 @@ function leagueAccept(title,section,url='',sourceUrl=''){
   // For an unrecognized source/headline after a broad fallback, reject it rather than mixing leagues.
   return false;
 }
-function buildArticle(raw,section){const eventTypes=classify(raw.title);return {...raw,sport:section.sport,league:section.league,eventType:eventTypes[0],eventTypes,eventId:`${section.sport}|${section.league}|${norm(raw.title)}`,sourceCount:1,languages:[raw.language],relatedSources:[raw.sourceName]};}
+function buildArticle(raw,section){const eventTypes=classify(raw.title);return {...raw,sectionId:section.id,sport:section.sport,league:section.league,eventType:eventTypes[0],eventTypes,eventId:`${section.sport}|${section.league}|${norm(raw.title)}`,sourceCount:1,languages:[raw.language],relatedSources:[raw.sourceName]};}
 async function one(section){
   const map=new Map();
   const countries=countryList(section);
+  const league=section.league||'全部';
+  const sport=section.sport||'棒球';
+  const allTerms=league!=='全部'?(LEAGUE[league]||[league]):[sport,...(SPORT_LEAGUES[sport]||[])];
+  const batches=Math.max(1,Math.min(3,Math.ceil(allTerms.length/8)));
   const jobs=[];
   for(const code of countries){
     const cfg=COUNTRY[code];
     if(!cfg) continue;
     jobs.push((async()=>{
       const hours=Math.max(1,Number(section.hours)||24);
-      const primary=await fetchText(googleUrl(queryFor(section,cfg,0,true),cfg.market)).catch(()=>null);
-      let parsed=primary?parseRss(primary,cfg.market):[];
-      if(!parsed.length){
-        const fallback=await fetchText(googleUrl(queryFor({...section,hours:Math.min(168,hours)},cfg,0,false),cfg.market)).catch(()=>null);
-        if(fallback) parsed=parseRss(fallback,cfg.market);
+      const collected=[];
+      for(let batch=0;batch<batches;batch++){
+        const primary=await fetchText(googleUrl(queryFor(section,cfg,batch,true),cfg.market)).catch(()=>null);
+        let parsed=primary?parseRss(primary,cfg.market):[];
+        if(!parsed.length){
+          const fallback=await fetchText(googleUrl(queryFor({...section,hours:Math.min(168,hours)},cfg,batch,false),cfg.market)).catch(()=>null);
+          if(fallback) parsed=parseRss(fallback,cfg.market);
+        }
+        collected.push(...parsed);
       }
-      parsed=parsed.filter(x=>{
+      const fresh=collected.filter(x=>{
         const ts=Date.parse(x.publishedAt);
         return Number.isFinite(ts) && (Date.now()-ts)<=hours*3600000;
       });
-      return [code,parsed];
+      return [code,fresh];
     })().catch(()=>[code,[]]));
   }
   const rs=await Promise.all(jobs);
@@ -262,6 +285,7 @@ async function one(section){
     for(const raw of items){
       const title=raw.title;
       const types=classify(title);
+      if(!typeAccept(title,section)) continue;
       if(LOW_VALUE.test(title)&&types[0]==='其他重要新聞') continue;
       const esports=section.sport==='電競';
       if(esports){
@@ -295,6 +319,8 @@ module.exports = async (req,res)=>{
     const rr=await Promise.allSettled(sections.map(one));
     const items=[];const errors=[];
     rr.forEach((r,i)=>{if(r.status==='fulfilled')items.push(...r.value);else errors.push(`${sections[i]?.sport||''}/${sections[i]?.league||''}`)});
-    return res.status(200).json({version:'vercel-localized-audited-all-sports-1',fetchedAt:new Date().toISOString(),items,count:items.length,errors});
-  }catch(e){return res.status(500).json({version:'vercel-localized-audited-all-sports-1',items:[],count:0,error:String(e)})}
+    return res.status(200).json({version:'vercel-localized-audited-all-sports-2',fetchedAt:new Date().toISOString(),items,count:items.length,errors});
+  }catch(e){return res.status(500).json({version:'vercel-localized-audited-all-sports-2',items:[],count:0,error:String(e)})}
 };
+
+if(process.env.NEWS_AUDIT_EXPORT==='1') module.exports.__audit={COUNTRY,LEAGUE,PACK,SPORT_COUNTRIES,SPORT_LEAGUES,ESPORTS_SITES,ESPORTS_RULES,TYPE,classify,typeAccept,selectedTypes,queryFor,leagueAccept,esportsAccept,countryList};
