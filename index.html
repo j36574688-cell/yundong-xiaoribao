@@ -20,6 +20,7 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:17px;margin:0 0 6px}.count{font-si
 .report-block{border-top:1px solid var(--line);padding-top:13px;margin-top:13px}.report-block:first-child{border-top:0;padding-top:0;margin-top:0}
 .block-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}.block-title{font-weight:850;font-size:16px}.block-count{font-size:12px;color:var(--muted)}
 .article{padding:12px 0;border-top:1px solid #eef0f3}.article:first-child{border-top:0;padding-top:0}.article h4{font-size:16px;line-height:1.45;margin:0 0 6px}.meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:7px}.article .tags{margin-top:6px}.link{display:inline-block;margin-top:8px;text-decoration:none}.empty-mini{font-size:13px;color:var(--muted);padding:8px 0}
+.title-translate{font-size:16px;font-weight:800;line-height:1.5;margin:0 0 5px}.title-original{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:6px}.translate-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;margin-top:10px;border-top:1px solid var(--line)}.switch{position:relative;width:48px;height:28px;display:inline-block}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;inset:0;background:#d0d5dd;border-radius:999px;transition:.2s}.slider:before{content:"";position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px #0002}.switch input:checked+.slider{background:#111827}.switch input:checked+.slider:before{transform:translateX(20px)}
 .form{display:grid;gap:12px}.label{font-size:13px;font-weight:800;margin-bottom:6px}input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit}
 .types{display:flex;flex-wrap:wrap;gap:8px}.check{display:flex;align-items:center;gap:7px;padding:9px 11px;background:#f8fafc;border:1px solid var(--line);border-radius:12px;font-size:13px}.check input{width:auto}
 .status{padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:13px;margin-bottom:12px}.err{color:#b42318;background:#fff5f5;border-color:#fecdca}
@@ -44,6 +45,9 @@ const API="/api/news";
 const API_TIMEOUT=90000;
 const AUTO_TEST_TIMEOUT=90000;
 let autoTestState={running:false,done:0,total:0,results:[]};
+let translateTitles=localStorage.getItem("sd_translate_titles")!=="0";
+const translationCache={};
+let translationRunId=0;
 
 const AUTO_TESTS=[
   {name:"NHL 全部",sport:"冰球",league:"NHL",contentTypes:["全部"],hours:24},
@@ -417,10 +421,17 @@ function articleHtml(n){
   const sourceCount=Number(n.sourceCount ?? 1);
   const heatLabel=heat>=80?"🔥 高熱度":heat>=60?"⭐ 熱門":"一般";
 
+  const originalTitle=String(n.title||"");
+  const titleIsChinese=/[\u3400-\u9fff]/.test(originalTitle) && !/[A-Za-z]{5,}/.test(originalTitle);
+  const titleBlock=(!translateTitles || titleIsChinese)
+    ?`<h4>${esc(originalTitle)}</h4>`
+    :`<h4 class="title-translate" data-original-title="${esc(originalTitle)}"><span class="translated-title">翻譯中…</span></h4>`;
+
   return `
   <article class="article">
 
-    <h4>${esc(n.title)}</h4>
+    ${titleBlock}
+    ${translateTitles && !titleIsChinese ? `<div class="title-original">原文：${esc(originalTitle)}</div>` : ""}
 
     <div class="meta">
       <span>${esc(n.sourceName||"新聞來源")}</span>
@@ -647,7 +658,7 @@ function focusArticles(){
 function focusHtml(){
   const arr=focusArticles();
   if(!arr.length)return "";
-  return `<div class="card"><div class="row"><div><h2>🔥 今日焦點</h2><div class="muted">依你的日報設定，優先整理最重要的幾則</div></div></div><div class="focus-list">${arr.map(n=>`<div class="focus-item"><div class="focus-title">${esc(n.title)}</div><div class="focus-meta"><span>${esc(n.sourceName||"新聞來源")}</span><span>${esc(languageLabel(n))}</span><span>${esc(n._section.sport)} · ${esc(n._section.league)}</span></div><div style="margin-top:5px"><span class="focus-tag">${esc(n.eventType||"其他重要新聞")}</span></div><a class="btn secondary link" href="${esc(n.url)}" target="_blank" rel="noopener">閱讀原文</a></div>`).join("")}</div></div>`;
+  return `<div class="card"><div class="row"><div><h2>🔥 今日焦點</h2><div class="muted">依你的日報設定，優先整理最重要的幾則</div></div></div><div class="focus-list">${arr.map(n=>{const t=String(n.title||"");const zh=/[\u3400-\u9fff]/.test(t)&&!/[A-Za-z]{5,}/.test(t);return `<div class="focus-item"><div class="focus-title ${translateTitles&&!zh?"title-translate":""}" ${translateTitles&&!zh?`data-original-title="${esc(t)}"`:""}>${translateTitles&&!zh?"翻譯中…":esc(t)}</div>${translateTitles&&!zh?`<div class="title-original">原文：${esc(t)}</div>`:""}<div class="focus-meta"><span>${esc(n.sourceName||"新聞來源")}</span><span>${esc(languageLabel(n))}</span><span>${esc(n._section.sport)} · ${esc(n._section.league)}</span></div><div style="margin-top:5px"><span class="focus-tag">${esc(n.eventType||"其他重要新聞")}</span></div><a class="btn secondary link" href="${esc(n.url)}" target="_blank" rel="noopener">閱讀原文</a></div>`}).join("")}</div></div>`;
 }
 
 function home(){
@@ -879,6 +890,19 @@ function settings(){
       </div>`:""}
   </div>
 
+  <div class="card">
+    <div class="translate-toggle">
+      <div>
+        <div class="test-title">🌐 新聞標題自動翻譯</div>
+        <div class="muted" style="margin-top:4px">自動把英文、日文、韓文等新聞標題翻成繁體中文；原文仍會保留。</div>
+      </div>
+      <label class="switch" aria-label="自動翻譯新聞標題">
+        <input id="translateToggle" type="checkbox" ${translateTitles?"checked":""}>
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
   <div id="form">
     ${formHtml()}
   </div>
@@ -1003,6 +1027,39 @@ async function runAutoTests(){
   render();
 }
 
+async function translateBatch(texts){
+  const unique=[...new Set(texts.filter(Boolean))];
+  const missing=unique.filter(t=>translationCache[t]===undefined);
+  if(missing.length){
+    try{
+      const r=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:missing}),cache:'no-store'});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||`HTTP ${r.status}`);
+      const out=Array.isArray(d.translations)?d.translations:[];
+      missing.forEach((t,i)=>{translationCache[t]=String(out[i]??t);});
+    }catch(_){
+      missing.forEach(t=>{translationCache[t]=t;});
+    }
+  }
+  return Object.fromEntries(unique.map(t=>[t,translationCache[t]??t]));
+}
+
+async function applyTitleTranslations(){
+  if(!translateTitles)return;
+  const nodes=[...document.querySelectorAll('[data-original-title]')];
+  if(!nodes.length)return;
+  const run=++translationRunId;
+  const texts=nodes.map(n=>n.getAttribute('data-original-title')||'');
+  const map=await translateBatch(texts);
+  if(run!==translationRunId)return;
+  nodes.forEach(n=>{
+    const original=n.getAttribute('data-original-title')||'';
+    const target=n.querySelector('.translated-title');
+    if(target)target.textContent=map[original]||original;
+    else if(n.classList.contains('focus-title'))n.textContent=map[original]||original;
+  });
+}
+
 function render(){
 
   main.innerHTML=
@@ -1013,6 +1070,7 @@ function render(){
         :settings();
 
   wire();
+  applyTitleTranslations();
 }
 
 function bindTypeHandlers(){
@@ -1066,6 +1124,16 @@ function wire(){
   const autoTestBtn=document.getElementById("autoTestBtn");
   if(autoTestBtn && !autoTestBtn.disabled){
     autoTestBtn.onclick=runAutoTests;
+  }
+
+  const translateToggle=document.getElementById("translateToggle");
+  if(translateToggle){
+    translateToggle.onchange=()=>{
+      translateTitles=!!translateToggle.checked;
+      localStorage.setItem("sd_translate_titles",translateTitles?"1":"0");
+      render();
+      applyTitleTranslations();
+    };
   }
 
   const saveBtn=document.getElementById("save");
