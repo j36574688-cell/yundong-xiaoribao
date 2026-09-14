@@ -74,6 +74,21 @@ const SPORT_LEAGUES = {
   棒球:['MLB','NPB','KBO','CPBL','WBC','WBSC','MiLB'], 籃球:['NBA','WNBA','FIBA','EuroLeague','P.LEAGUE+','T1','SBL'], 足球:['世界盃','歐冠','英超','西甲','意甲','德甲','法甲','MLS'], 網球:['ATP','WTA','四大滿貫','Davis Cup','Billie Jean King Cup'], 賽車:['F1','MotoGP','WEC','NASCAR','IndyCar','Formula E','Formula 2'], 羽球:['BWF','湯姆斯盃','尤伯盃','蘇迪曼盃'], 桌球:['WTT','ITTF'], 排球:['VNL','FIVB'], 冰球:['NHL','IIHF'], 高爾夫:['PGA','LPGA','DP World Tour','Ryder Cup','U.S. Open'], 拳擊:['WBC Boxing','WBA','IBF','WBO'], MMA:['UFC','PFL','ONE Championship','Bellator'], 田徑:['World Athletics','Diamond League'], 游泳:['World Aquatics'], 體操:['FIG'], 自行車:['UCI','Tour de France','Giro d’Italia','Vuelta a España'], 電競:['League of Legends','LCK','LPL','LEC','LCS','Valorant','VCT','CS2','BLAST','ESL','Dota 2'], 橄欖球:['Rugby World Cup','Six Nations','The Rugby Championship'], 美式足球:['NFL','NCAA','Super Bowl'], 手球:['IHF','EHF'], 曲棍球:['FIH','Hockey World Cup'], 滑雪:['FIS'], 射箭:['World Archery'], 擊劍:['FIE'], 舉重:['IWF'], 柔道:['IJF'], 跆拳道:['World Taekwondo'], 馬術:['FEI'], 三鐵:['World Triathlon','IRONMAN']
 };
 
+
+const ESPORTS_SITES = {
+  "League of Legends":["lolesports.com","inven.co.kr","wanplus.cn","esportsinsider.com"],
+  LCK:["lolesports.com","inven.co.kr","fmkorea.com","gosugamers.net"],
+  LPL:["lolesports.com","wanplus.cn","gosugamers.net","esportsinsider.com"],
+  LEC:["lolesports.com","sheepesports.com","esportsinsider.com","dexerto.com"],
+  LCS:["lolesports.com","esportsinsider.com","esports.gg","dexerto.com"],
+  Valorant:["valorantesports.com","vlr.gg","thespike.gg","esportsinsider.com"],
+  VCT:["valorantesports.com","vlr.gg","thespike.gg","rib.gg"],
+  CS2:["hltv.org","blast.tv","esl.com","liquipedia.net"],
+  BLAST:["blast.tv","hltv.org","esl.com","liquipedia.net"],
+  ESL:["esl.com","hltv.org","liquipedia.net","esportsinsider.com"],
+  "Dota 2":["dota2.com","gosugamers.net","liquipedia.net","esportsinsider.com"]
+};
+
 const TYPE = {
   "比賽結果":/final score|box score|game result|won|win over|beat|defeat|victory|lost to|勝|敗|比分|戰勝|擊敗|賽果|終場/i,
   "即時戰況":/\blive\b|live score|live updates|in progress|即時|文字直播/i,
@@ -113,7 +128,7 @@ function classify(title){let hits=Object.entries(TYPE).filter(([,r])=>r.test(tit
 function parseRss(xml,lang){const out=[];const items=String(xml).match(/<item>[\s\S]*?<\/item>/gi)||[];for(const item of items){const m=(tag)=>{const x=item.match(new RegExp(`<${tag}(?:[^>]*)>([\\s\\S]*?)<\\/${tag}>`,'i'));return x?clean(x[1]):''};const title=m('title');const link=m('link')||((item.match(/<link>([^<]+)/i)||[])[1]||'');const pub=m('pubDate')||m('published')||m('updated');const sm=item.match(/<source[^>]*>([\s\S]*?)<\/source>/i);const source=sm?clean(sm[1]):'Google News';if(title&&link)out.push({title,url:link,sourceName:source,publishedAt:parseDate(pub),language:lang});}return out;}
 async function fetchText(url,ms=4500){const ac=new AbortController();const timer=setTimeout(()=>ac.abort(),ms);try{const r=await fetch(url,{signal:ac.signal,headers:{'user-agent':'SportsDaily/7.0','accept':'application/rss+xml,application/xml,text/xml'}});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.text();}finally{clearTimeout(timer);}}
 function googleUrl(q,market){const [lang,cc]=market.split('-');return `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=${encodeURIComponent(market)}&gl=${cc}&ceid=${cc}:${lang}`;}
-function queryFor(section,cfg){const league=section.league||'全部';const sport=section.sport||'棒球';const terms=league!=='全部'?(LEAGUE[league]||[league]):([sport,...(SPORT_LEAGUES[sport]||[])]);const t=terms.slice(0,6).map(x=>`"${x}"`).join(' OR ');const sites=cfg.domains.slice(0,6).map(x=>`site:${x}`).join(' OR ');return `(${t}) (${sites}) when:${Math.min(7,Math.max(1,Math.ceil((Number(section.hours)||24)/24)))}d`;}
+function queryFor(section,cfg){const league=section.league||'全部';const sport=section.sport||'棒球';const terms=league!=='全部'?(LEAGUE[league]||[league]):([sport,...(SPORT_LEAGUES[sport]||[])]);const t=terms.slice(0,6).map(x=>`"${x}"`).join(' OR ');const domains=ESPORTS_SITES[league]||((sport==='電競')?['lolesports.com','hltv.org','vlr.gg','blast.tv','esl.com','gosugamers.net']:cfg.domains);const sites=domains.slice(0,6).map(x=>`site:${x}`).join(' OR ');return `(${t}) (${sites}) when:${Math.min(7,Math.max(1,Math.ceil((Number(section.hours)||24)/24)))}d`;}
 function countryList(section){if(section.league&&PACK[section.league])return PACK[section.league].filter(x=>COUNTRY[x]).slice(0,4);if(section.sport&&SPORT_COUNTRIES[section.sport])return SPORT_COUNTRIES[section.sport].filter(x=>COUNTRY[x]).slice(0,4);return ['US','GB','JP','KR'];}
 function domainOf(url){
   try{return new URL(String(url||'')).hostname.replace(/^www\./,'').toLowerCase();}
