@@ -46,8 +46,36 @@ const API_TIMEOUT=90000;
 const AUTO_TEST_TIMEOUT=90000;
 let autoTestState={running:false,done:0,total:0,results:[]};
 let translateTitles=localStorage.getItem("sd_translate_titles")!=="0";
-const translationCache={};
+const translationCache=(()=>{
+  try{
+    const raw=JSON.parse(localStorage.getItem("sd_translation_cache")||"{}");
+    const now=Date.now();
+    const out={};
+    for(const [k,v] of Object.entries(raw||{})){
+      if(v && typeof v==="object" && v.value && now-(v.time||0)<7*24*60*60*1000) out[k]=v;
+    }
+    return out;
+  }catch(_){return {};}
+})();
 let translationRunId=0;
+
+function titleNeedsTranslation(text){
+  const s=String(text||"").trim();
+  if(!s)return false;
+  if(/[\uac00-\ud7af]/.test(s) || /[\u3040-\u30ff]/.test(s))return true;
+  const han=(s.match(/[\u3400-\u9fff]/g)||[]).length;
+  const latin=(s.match(/[A-Za-z]/g)||[]).length;
+  if(han>=3 && han>=Math.ceil((han+latin)*0.45))return false;
+  return latin>=2;
+}
+
+function saveTranslationCache(){
+  try{
+    const entries=Object.entries(translationCache).slice(-400);
+    localStorage.setItem("sd_translation_cache",JSON.stringify(Object.fromEntries(entries)));
+  }catch(_){}
+}
+
 
 const AUTO_TESTS=[
   {name:"NHL 全部",sport:"冰球",league:"NHL",contentTypes:["全部"],hours:24},
@@ -422,7 +450,7 @@ function articleHtml(n){
   const heatLabel=heat>=80?"🔥 高熱度":heat>=60?"⭐ 熱門":"一般";
 
   const originalTitle=String(n.title||"");
-  const titleIsChinese=/[\u3400-\u9fff]/.test(originalTitle) && !/[A-Za-z]{5,}/.test(originalTitle);
+  const titleIsChinese=!titleNeedsTranslation(originalTitle);
   const titleBlock=(!translateTitles || titleIsChinese)
     ?`<h4>${esc(originalTitle)}</h4>`
     :`<h4 class="title-translate" data-original-title="${esc(originalTitle)}"><span class="translated-title">翻譯中…</span></h4>`;
@@ -658,7 +686,7 @@ function focusArticles(){
 function focusHtml(){
   const arr=focusArticles();
   if(!arr.length)return "";
-  return `<div class="card"><div class="row"><div><h2>🔥 今日焦點</h2><div class="muted">依你的日報設定，優先整理最重要的幾則</div></div></div><div class="focus-list">${arr.map(n=>{const t=String(n.title||"");const zh=/[\u3400-\u9fff]/.test(t)&&!/[A-Za-z]{5,}/.test(t);return `<div class="focus-item"><div class="focus-title ${translateTitles&&!zh?"title-translate":""}" ${translateTitles&&!zh?`data-original-title="${esc(t)}"`:""}>${translateTitles&&!zh?"翻譯中…":esc(t)}</div>${translateTitles&&!zh?`<div class="title-original">原文：${esc(t)}</div>`:""}<div class="focus-meta"><span>${esc(n.sourceName||"新聞來源")}</span><span>${esc(languageLabel(n))}</span><span>${esc(n._section.sport)} · ${esc(n._section.league)}</span></div><div style="margin-top:5px"><span class="focus-tag">${esc(n.eventType||"其他重要新聞")}</span></div><a class="btn secondary link" href="${esc(n.url)}" target="_blank" rel="noopener">閱讀原文</a></div>`}).join("")}</div></div>`;
+  return `<div class="card"><div class="row"><div><h2>🔥 今日焦點</h2><div class="muted">依你的日報設定，優先整理最重要的幾則</div></div></div><div class="focus-list">${arr.map(n=>{const t=String(n.title||"");const zh=!titleNeedsTranslation(t);return `<div class="focus-item"><div class="focus-title ${translateTitles&&!zh?"title-translate":""}" ${translateTitles&&!zh?`data-original-title="${esc(t)}"`:""}>${translateTitles&&!zh?"翻譯中…":esc(t)}</div>${translateTitles&&!zh?`<div class="title-original">原文：${esc(t)}</div>`:""}<div class="focus-meta"><span>${esc(n.sourceName||"新聞來源")}</span><span>${esc(languageLabel(n))}</span><span>${esc(n._section.sport)} · ${esc(n._section.league)}</span></div><div style="margin-top:5px"><span class="focus-tag">${esc(n.eventType||"其他重要新聞")}</span></div><a class="btn secondary link" href="${esc(n.url)}" target="_blank" rel="noopener">閱讀原文</a></div>`}).join("")}</div></div>`;
 }
 
 function home(){
@@ -971,11 +999,39 @@ function autoTestResultsHtml(){
 
 async function runAutoTests(){
   if(autoTestState.running)return;
-  autoTestState={running:true,done:0,total:AUTO_TESTS.length,results:[]};
-  status="自動測試開始：會逐項測試，不會修改你的日報設定…";
+  const total=AUTO_TESTS.length+1;
+  autoTestState={running:true,done:0,total,results:[]};
+  status="自動測試開始：先檢查標題翻譯，再逐項測試新聞…";
   render();
 
   const results=[];
+  try{
+    status="自動測試中：1/"+total+" 標題翻譯服務";
+    render();
+    const sample=[
+      "Toronto Blue Jays in battle for playoff spot",
+      "大谷翔平が本塁打を放つ",
+      "오타니 쇼헤이 홈런"
+    ];
+    const r=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:sample}),cache:'no-store'});
+    const d=await r.json().catch(()=>({}));
+    const out=Array.isArray(d.translations)?d.translations:[];
+    const badText=out.some(x=>/invalid source language|example:\s*langpair|almost all languages supported|translation error|response error|quota|rate limit|\bhttp\s*\d{3}\b/i.test(String(x||'')));
+    const translatedCount=out.filter((x,i)=>String(x||'').trim() && String(x).trim()!==sample[i] && /[\u3400-\u9fff]/.test(String(x))).length;
+    if(!r.ok || badText){
+      results.push({name:"標題翻譯服務",status:"bad",detail:"翻譯 API 回傳錯誤內容"});
+    }else if(translatedCount===sample.length){
+      results.push({name:"標題翻譯服務",status:"ok",detail:`英文／日文／韓文測試 ${translatedCount}/${sample.length} 通過`});
+    }else{
+      results.push({name:"標題翻譯服務",status:"warn",detail:`翻譯服務可回應，但只有 ${translatedCount}/${sample.length} 筆成功翻譯`});
+    }
+  }catch(e){
+    results.push({name:"標題翻譯服務",status:"bad",detail:String(e?.message||e)});
+  }
+  autoTestState.done=1;
+  autoTestState.results=[...results];
+  render();
+
   for(let i=0;i<AUTO_TESTS.length;i++){
     const x=AUTO_TESTS[i];
     const section={
@@ -987,7 +1043,7 @@ async function runAutoTests(){
       hours:x.hours
     };
     try{
-      status=`自動測試中：${i+1}/${AUTO_TESTS.length} ${x.name}`;
+      status=`自動測試中：${i+2}/${total} ${x.name}`;
       render();
       const d=await fetchNewsBatch([section],AUTO_TEST_TIMEOUT);
       const returned=Array.isArray(d.items)?d.items:[];
@@ -1016,7 +1072,7 @@ async function runAutoTests(){
     }catch(e){
       results.push({name:x.name,status:"bad",detail:String(e?.message||e)});
     }
-    autoTestState.done=i+1;
+    autoTestState.done=i+2;
     autoTestState.results=[...results];
     render();
   }
@@ -1029,7 +1085,12 @@ async function runAutoTests(){
 
 async function translateBatch(texts){
   const unique=[...new Set(texts.filter(Boolean))];
-  const missing=unique.filter(t=>translationCache[t]===undefined);
+  const now=Date.now();
+  const missing=unique.filter(t=>{
+    if(!titleNeedsTranslation(t)) return false;
+    const hit=translationCache[t];
+    return !hit || (hit.retryAfter && hit.retryAfter<=now);
+  });
   if(missing.length){
     try{
       const r=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:missing}),cache:'no-store'});
@@ -1038,14 +1099,19 @@ async function translateBatch(texts){
       const out=Array.isArray(d.translations)?d.translations:[];
       missing.forEach((t,i)=>{
         const candidate=String(out[i]??'').trim();
-        const bad=/invalid source language|example:\s*langpair|almost all languages supported|translation error|\bhttp\s*\d{3}\b/i.test(candidate);
-        translationCache[t]=(!candidate||bad)?t:candidate;
+        const bad=/invalid source language|example:\s*langpair|almost all languages supported|translation error|response error|quota|rate limit|\bhttp\s*\d{3}\b/i.test(candidate);
+        if(candidate && !bad && candidate!==t){
+          translationCache[t]={value:candidate,time:Date.now()};
+        }else{
+          translationCache[t]={value:t,time:Date.now(),retryAfter:Date.now()+2*60*1000};
+        }
       });
+      saveTranslationCache();
     }catch(_){
-      missing.forEach(t=>{translationCache[t]=t;});
+      missing.forEach(t=>{translationCache[t]={value:t,time:Date.now(),retryAfter:Date.now()+2*60*1000};});
     }
   }
-  return Object.fromEntries(unique.map(t=>[t,translationCache[t]??t]));
+  return Object.fromEntries(unique.map(t=>[t,translationCache[t]?.value||t]));
 }
 
 async function applyTitleTranslations(){
