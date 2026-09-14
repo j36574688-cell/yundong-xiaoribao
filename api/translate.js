@@ -1,21 +1,49 @@
 // Vercel Serverless Function: title translation plugin for 運動小日報.
-// Uses Google Translate's public translate endpoint as a server-side relay so the browser
-// does not need direct cross-origin access. No API key is stored in the app.
+// Google Translate + MyMemory fallback. Translation failure never breaks news.
 
 function cleanText(s){return String(s??'').replace(/\s+/g,' ').trim();}
+
+function looksChinese(q){
+  const han=(q.match(/[\u3400-\u9fff]/g)||[]).length;
+  const kana=(q.match(/[\u3040-\u30ff]/g)||[]).length;
+  const hangul=(q.match(/[\uac00-\ud7af]/g)||[]).length;
+  const latin=(q.match(/[A-Za-z]/g)||[]).length;
+  if(kana>0 || hangul>0) return false;
+  return han>=2 && han>=Math.max(2, Math.floor(q.length*0.22)) && latin<Math.max(3, Math.floor(q.length*0.12));
+}
+
+async function fetchJson(url,headers={},ms=12000){
+  const c=new AbortController();
+  const timer=setTimeout(()=>c.abort(),ms);
+  try{
+    const r=await fetch(url,{headers,signal:c.signal});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  }finally{clearTimeout(timer);}
+}
+
+async function googleTranslate(q){
+  const url=`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=zh-TW&dt=t&q=${encodeURIComponent(q)}`;
+  const data=await fetchJson(url,{'User-Agent':'Mozilla/5.0'});
+  const segs=Array.isArray(data?.[0])?data[0]:[];
+  return segs.map(x=>Array.isArray(x)?String(x[0]||''):'').join('').trim();
+}
+
+async function myMemoryTranslate(q){
+  const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(q)}&langpair=auto|zh-TW`;
+  const data=await fetchJson(url,{'Accept':'application/json','User-Agent':'Mozilla/5.0'});
+  return cleanText(data?.responseData?.translatedText||'');
+}
 
 async function translateOne(text){
   const q=cleanText(text);
   if(!q)return '';
-  // Already predominantly Traditional/Chinese: preserve it and avoid unnecessary calls.
-  const cjk=(q.match(/[\u3400-\u9fff]/g)||[]).length;
-  if(cjk>=Math.max(2,Math.floor(q.length*0.22))) return q;
-  const url=`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=zh-TW&dt=t&q=${encodeURIComponent(q)}`;
-  const r=await fetch(url,{headers:{'User-Agent':'Mozilla/5.0'}});
-  if(!r.ok)throw new Error(`translation upstream HTTP ${r.status}`);
-  const data=await r.json();
-  const segs=Array.isArray(data?.[0])?data[0]:[];
-  const out=segs.map(x=>Array.isArray(x)?String(x[0]||''): '').join('').trim();
+  if(looksChinese(q))return q;
+  let out='';
+  try{out=cleanText(await googleTranslate(q));}catch(_){}
+  if(!out || out===q){
+    try{out=cleanText(await myMemoryTranslate(q));}catch(_){}
+  }
   return out||q;
 }
 
@@ -23,19 +51,21 @@ module.exports=async(req,res)=>{
   res.setHeader('Access-Control-Allow-Origin','*');
   res.setHeader('Access-Control-Allow-Methods','POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers','Content-Type');
-  res.setHeader('Cache-Control','no-store, no-cache, must-revalidate');
+  res.setHeader('Cache-Control','no-store');
   if(req.method==='OPTIONS')return res.status(200).end();
   if(req.method!=='POST')return res.status(405).json({error:'POST only'});
   try{
     const raw=Array.isArray(req.body?.texts)?req.body.texts:[];
     const texts=[...new Set(raw.map(cleanText).filter(Boolean))].slice(0,30);
     const translations=[];
+    let translatedCount=0;
     for(const t of texts){
-      try{translations.push(await translateOne(t));}
-      catch(_){translations.push(t);}
+      const out=await translateOne(t);
+      translations.push(out);
+      if(out && out!==t)translatedCount++;
     }
-    return res.status(200).json({translations,requested:texts.length,translated:texts.length,version:'title-zh-tw-1'});
+    return res.status(200).json({translations,requested:texts.length,translated:translatedCount,version:'title-zh-tw-2'});
   }catch(e){
-    return res.status(500).json({error:String(e),translations:[]});
+    return res.status(200).json({error:String(e),translations:[],requested:0,translated:0,version:'title-zh-tw-2'});
   }
 };
