@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>運動小日報</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--text:#121826;--muted:#667085;--line:#e4e7ec;--brand:#111827;--soft:#eef2f6;--blue:#2457d6}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
+body{min-height:100vh}.app{max-width:780px;margin:auto;padding-bottom:96px}.top{position:sticky;top:0;z-index:20;background:#f5f7faee;backdrop-filter:blur(14px);padding:15px 16px 12px;border-bottom:1px solid #e4e7ecaa}
+.title{font-size:24px;font-weight:850}.sub{margin-top:4px;color:var(--muted);font-size:13px}.content{padding:14px 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:12px;box-shadow:0 4px 15px #1018280a}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.muted{color:var(--muted);font-size:13px}.btn{border:0;border-radius:12px;padding:10px 13px;font-weight:750;cursor:pointer}.primary{background:var(--brand);color:#fff}.secondary{background:var(--soft);color:var(--text)}
+h2{font-size:20px;margin:0 0 8px}h3{font-size:17px;margin:0 0 6px}.count{font-size:34px;font-weight:850}
+.section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.section-title{font-size:19px;font-weight:850}.section-meta{color:var(--muted);font-size:13px;margin-top:4px}
+.pill{display:inline-flex;background:#eef2ff;color:#3730a3;padding:5px 9px;border-radius:999px;font-size:12px;margin:2px 4px 2px 0}
+.note{font-size:12px;color:var(--muted);line-height:1.5;background:#f8fafc;border-radius:12px;padding:10px 12px;margin-top:10px}
+.report-block{border-top:1px solid var(--line);padding-top:13px;margin-top:13px}.report-block:first-child{border-top:0;padding-top:0;margin-top:0}
+.block-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}.block-title{font-weight:850;font-size:16px}.block-count{font-size:12px;color:var(--muted)}
+.article{padding:12px 0;border-top:1px solid #eef0f3}.article:first-child{border-top:0;padding-top:0}.article h4{font-size:16px;line-height:1.45;margin:0 0 6px}.meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:7px}.article .tags{margin-top:6px}.link{display:inline-block;margin-top:8px;text-decoration:none}.empty-mini{font-size:13px;color:var(--muted);padding:8px 0}
+.form{display:grid;gap:12px}.label{font-size:13px;font-weight:800;margin-bottom:6px}input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit}
+.types{display:flex;flex-wrap:wrap;gap:8px}.check{display:flex;align-items:center;gap:7px;padding:9px 11px;background:#f8fafc;border:1px solid var(--line);border-radius:12px;font-size:13px}.check input{width:auto}
+.status{padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:13px;margin-bottom:12px}.err{color:#b42318;background:#fff5f5;border-color:#fecdca}
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fffffff4;backdrop-filter:blur(16px);border-top:1px solid var(--line)}.navs{max-width:780px;margin:auto;display:grid;grid-template-columns:repeat(3,1fr);padding:8px 10px calc(8px + env(safe-area-inset-bottom));gap:4px}.nav{background:transparent;border:0;border-radius:13px;padding:8px 5px;font-size:12px}.nav.active{background:var(--soft);font-weight:850}
+@media(min-width:700px){.content{padding:22px}.top{padding-left:22px;padding-right:22px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top"><div class="title">運動小日報</div><div class="sub">每天幫你整理一下今天的運動</div></header>
+<main id="main" class="content"></main>
+</div>
+<nav class="bottom"><div class="navs">
+<button class="nav active" data-page="home">🏠<br>首頁</button>
+<button class="nav" data-page="news">📰<br>新聞</button>
+<button class="nav" data-page="settings">⚙️<br>設定</button>
+</div></nav>
+
+<script>
+const API="https://rspeslnhsvkjremawtcd.supabase.co/functions/v1/news-v11";
+const SPORTS=["棒球","籃球","足球","網球","賽車","羽球","桌球","排球","冰球","高爾夫","拳擊","MMA","田徑","游泳","體操","自行車","電競","橄欖球","美式足球","手球","曲棍球","滑雪","射箭","擊劍","舉重","柔道","跆拳道","馬術","三鐵"];
+const LEAGUES={棒球:["全部","MLB","NPB","KBO","CPBL","WBC","WBSC","MiLB"],籃球:["全部","NBA","WNBA","FIBA","EuroLeague","P.LEAGUE+","T1","SBL"],足球:["全部","世界盃","歐冠","英超","西甲","意甲","德甲","法甲","MLS"],網球:["全部","ATP","WTA","四大滿貫","Davis Cup","Billie Jean King Cup"],賽車:["全部","F1","MotoGP","WEC","NASCAR","IndyCar","Formula E","Formula 2"],羽球:["全部","BWF","湯姆斯盃","尤伯盃","蘇迪曼盃"],桌球:["全部","WTT","ITTF"],排球:["全部","VNL","FIVB"],冰球:["全部","NHL","IIHF"],高爾夫:["全部","PGA","LPGA","DP World Tour","Ryder Cup","U.S. Open"],拳擊:["全部","WBC Boxing","WBA","IBF","WBO"],MMA:["全部","UFC","PFL","ONE Championship","Bellator"],田徑:["全部","World Athletics","Diamond League"],游泳:["全部","World Aquatics"],體操:["全部","FIG"],自行車:["全部","UCI","Tour de France","Giro d’Italia","Vuelta a España"],電競:["全部","League of Legends","LCK","LPL","LEC","LCS","Valorant","VCT","CS2","BLAST","ESL","Dota 2"],橄欖球:["全部","Rugby World Cup","Six Nations","The Rugby Championship"],美式足球:["全部","NFL","NCAA","Super Bowl"],手球:["全部","IHF","EHF"],曲棍球:["全部","FIH","Hockey World Cup"],滑雪:["全部","FIS"],射箭:["全部","World Archery"],擊劍:["全部","FIE"],舉重:["全部","IWF"],柔道:["全部","IJF"],跆拳道:["全部","World Taekwondo"],馬術:["全部","FEI"],三鐵:["全部","World Triathlon","IRONMAN"]};
+const TYPES=["全部","比賽結果","即時戰況","賽程","晉級／淘汰","冠軍／決賽","球員／選手表現","生涯紀錄","世界／聯盟紀錄","獎項／MVP","交易","簽約／續約","自由市場","受傷","傷勢更新","手術","復出","缺席","禁賽／罰款","爭議","裁判事件","衝突","聯盟調查","教練異動","球隊／聯盟公告","商業／合約","排名","國際賽事","延期／取消"];
+const TYPE_WORDS={
+"比賽結果":["score","result","won","win","lost","loss","beat","defeat","勝","敗","比分","戰果","擊敗"],
+"即時戰況":["live","即時","現場"],
+"賽程":["schedule","fixture","賽程","預告"],
+"晉級／淘汰":["advance","qualif","eliminat","晉級","淘汰"],
+"冠軍／決賽":["championship","champion","final","冠軍","決賽"],
+"球員／選手表現":["stats","statistics","performance","mvp","表現","單場","得分","安打","投球"],
+"生涯紀錄":["career record","milestone","生涯","里程碑"],
+"世界／聯盟紀錄":["world record","league record","record","紀錄","新高"],
+"獎項／MVP":["MVP","award","獎","最有價值"],
+"交易":["trade","traded","交易"],
+"簽約／續約":["signing","signed","extension","contract","簽約","續約","合約"],
+"自由市場":["free agent","free agency","自由球員","自由市場"],
+"受傷":["injury","injured","hurt","受傷","傷勢","傷兵"],
+"傷勢更新":["injury update","injury report","傷勢更新"],
+"手術":["surgery","手術"],
+"復出":["comeback","return","復出","回歸"],
+"缺席":["absence","unavailable","out","缺席","缺陣"],
+"禁賽／罰款":["suspension","suspended","fine","禁賽","罰款"],
+"爭議":["controversy","爭議"],
+"裁判事件":["referee","umpire","officiating","裁判"],
+"衝突":["conflict","altercation","衝突","鬥毆"],
+"聯盟調查":["investigation","調查"],
+"教練異動":["coach","manager","fired","hired","教練","總教練","換帥"],
+"球隊／聯盟公告":["official announcement","announcement","公告","宣布"],
+"商業／合約":["business","sponsorship","commercial","商業","贊助"],
+"排名":["ranking","rankings","standings","排名","戰績"],
+"國際賽事":["international","world championship","國際賽","世界錦標"],
+"延期／取消":["postponed","cancelled","canceled","延期","取消"]
+};
+let sections=JSON.parse(localStorage.getItem("sd_sections")||"[]"), news=[], page="home", status="";
+const esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const norm=s=>String(s||"").toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"").slice(0,260);
+function save(){localStorage.setItem("sd_sections",JSON.stringify(sections))}
+function go(p){page=p;document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("active",b.dataset.page===p));render()}
+function classify(n){
+  const raw=`${n.title||""} ${n.eventType||""}`.toLowerCase();
+  const found=[];
+  for(const [label,words] of Object.entries(TYPE_WORDS)) if(words.some(w=>raw.includes(w.toLowerCase()))) found.push(label);
+  if(n.eventType && n.eventType!=="重大事件" && !found.includes(n.eventType)) found.unshift(n.eventType);
+  return found.length?found:["重大事件"];
+}
+function matchesSport(n,s){return !s||s==="全部"||n.sport===s}
+function scoreArticle(n,s){
+  const cats=classify(n); let score=0;
+  const preferred=(s.types||[]).filter(x=>x!=="全部");
+  if(s.league && s.league!=="全部"){
+    const t=`${n.title||""} ${n.league||""}`.toLowerCase();
+    if(t.includes(String(s.league).toLowerCase()))score+=8;
+  } else score+=2;
+  preferred.forEach((x,i)=>{if(cats.includes(x))score+=10-i});
+  score+=Math.max(0,5-(Date.now()-Date.parse(n.publishedAt||""))/3600000);
+  return score;
+}
+function rankedForSection(s){
+  return news.filter(n=>matchesSport(n,s.sport)).slice().sort((a,b)=>scoreArticle(b,s)-scoreArticle(a,s));
+}
+function articleHtml(n){
+  const cats=classify(n);
+  return `<article class="article"><h4>${esc(n.title)}</h4><div class="meta"><span>${esc(n.sourceName||"新聞來源")}</span><span>${new Date(n.publishedAt).toLocaleString("zh-TW")}</span></div><div class="tags">${cats.slice(0,4).map(x=>`<span class="pill">${esc(x)}</span>`).join("")}</div><a class="btn secondary link" href="${esc(n.url)}" target="_blank" rel="noopener">閱讀原文</a></article>`;
+}
+function groupSection(s){
+  const ranked=rankedForSection(s), selected=(s.types||["全部"]).filter(x=>x!=="全部");
+  if(!selected.length)return `<div class="report-block"><div class="block-head"><div class="block-title">全部相關新聞</div><div class="block-count">${ranked.length} 則</div></div>${ranked.slice(0,15).map(articleHtml).join("")||'<div class="empty-mini">目前沒有相關新聞</div>'}</div>`;
+  const used=new Set(), blocks=[];
+  for(const type of selected){
+    const arr=ranked.filter(n=>classify(n).includes(type));
+    arr.forEach(n=>used.add(n));
+    blocks.push(`<div class="report-block"><div class="block-head"><div class="block-title">${esc(type)}</div><div class="block-count">${arr.length} 則</div></div>${arr.slice(0,8).map(articleHtml).join("")||'<div class="empty-mini">目前沒有符合此類型的新聞</div>'}</div>`);
+  }
+  const other=ranked.filter(n=>!used.has(n));
+  blocks.push(`<div class="report-block"><div class="block-head"><div class="block-title">其他重要新聞</div><div class="block-count">${other.length} 則</div></div>${other.slice(0,8).map(articleHtml).join("")||'<div class="empty-mini">目前沒有其他重要新聞</div>'}</div>`);
+  return blocks.join("");
+}
+function reportCard(s){
+  return `<section class="card"><div class="section-head"><div><div class="section-title">${esc(s.name)}</div><div class="section-meta">${esc(s.sport)} · ${esc(s.league||"全部") } · 過去 ${s.hours} 小時</div></div></div><div style="margin-top:6px">${(s.types||["全部"]).map(x=>`<span class="pill">${esc(x)}</span>`).join("")}</div><div class="note">選項是「優先順序」，不是硬性過濾。符合你選擇的項目會優先排列，其他相關的重要新聞仍會保留。</div>${groupSection(s)}</section>`;
+}
+function home(){
+  return `<div class="card"><h2>🔥 今日焦點</h2><div class="count">${news.length}</div><div class="muted">${esc(status||"尚未更新新聞")}</div></div>${sections.length?sections.map(reportCard).join(""):`<div class="card empty-mini">還沒有建立日報。到「設定」建立第一個日報分區。</div>`}`;
+}
+function newsPage(){
+  return `${status?`<div class="status ${status.includes("失敗")?"err":""}">${esc(status)}</div>`:""}<div class="card row"><div><b>新聞</b><div class="muted">目前 ${news.length} 則</div></div><button class="btn primary" onclick="loadNews()">更新新聞</button></div>${sections.length?sections.map(reportCard).join(""):`<div class="card empty-mini">請先在設定建立日報。</div>`}`;
+}
+function typeInputs(sel){return TYPES.map(t=>`<label class="check"><input type="checkbox" class="type" value="${esc(t)}" ${sel.includes(t)?"checked":""}>${esc(t)}</label>`).join("")}
+function formHtml(s={name:"",sport:"棒球",league:"全部",types:["全部"],hours:24},idx=-1){
+  return `<div class="card"><div class="form"><div><div class="label">分區名稱</div><input id="name" value="${esc(s.name)}" placeholder="例如：MLB 日報"></div><div><div class="label">運動</div><select id="sport">${SPORTS.map(x=>`<option ${x===s.sport?"selected":""}>${x}</option>`).join("")}</select></div><div><div class="label">聯盟／賽事</div><select id="league">${(LEAGUES[s.sport]||["全部"]).map(x=>`<option ${x===s.league?"selected":""}>${x}</option>`).join("")}</select></div><div><div class="label">內容類型</div><div class="types">${typeInputs(s.types||["全部"])}</div></div><div><div class="label">時間範圍</div><select id="hours"><option value="6" ${s.hours===6?"selected":""}>過去 6 小時</option><option value="24" ${s.hours===24?"selected":""}>過去 24 小時</option><option value="72" ${s.hours===72?"selected":""}>過去 3 天</option><option value="168" ${s.hours===168?"selected":""}>過去 7 天</option></select></div><button class="btn primary" id="save">${idx<0?"儲存日報分區":"更新日報分區"}</button></div></div>`;
+}
+function settings(){
+  return `<div class="card"><h2>⚙️ 日報設定</h2><div class="muted">聯盟與內容類型是「優先」，不是嚴格限制，因此不會因為選了 MLB 或交易就把其他有價值新聞直接刪掉。</div></div><div id="form">${formHtml()}</div>${sections.map((s,i)=>`<div class="card"><div class="row"><div><h3>${esc(s.name)}</h3><div class="muted">${esc(s.sport)} · ${esc(s.league||"全部")} · ${s.hours} 小時</div></div><div><button class="btn secondary" onclick="edit(${i})">編輯</button> <button class="btn secondary" onclick="del(${i})">刪除</button></div></div><div style="margin-top:7px">${(s.types||["全部"]).map(x=>`<span class="pill">${esc(x)}</span>`).join("")}</div></div>`).join("")}`;
+}
+function render(){main.innerHTML=page==="home"?home():page==="news"?newsPage():settings();wire()}
+function wire(){
+  const sp=document.getElementById("sport"),lg=document.getElementById("league");
+  if(sp&&lg)sp.onchange=()=>{lg.innerHTML=(LEAGUES[sp.value]||["全部"]).map(x=>`<option>${x}</option>`).join("")};
+  document.querySelectorAll(".type").forEach(c=>c.onchange=()=>{const all=[...document.querySelectorAll(".type")].find(x=>x.value==="全部");if(c.value==="全部"&&c.checked)document.querySelectorAll(".type").forEach(x=>{if(x!==all)x.checked=false});else if(c.value!=="全部"&&c.checked&&all)all.checked=false});
+  const saveBtn=document.getElementById("save");
+  if(saveBtn)saveBtn.onclick=()=>{const types=[...document.querySelectorAll(".type:checked")].map(x=>x.value);sections.push({id:crypto.randomUUID(),name:document.getElementById("name").value.trim()||`${sp.value} 日報`,sport:sp.value,league:lg.value,types:types.length?types:["全部"],hours:Number(document.getElementById("hours").value)});save();status="日報已儲存，正在更新新聞…";render();loadNews()};
+}
+function edit(i){main.innerHTML=formHtml(sections[i],i);wireEdit(i)}
+function wireEdit(i){const sp=document.getElementById("sport"),lg=document.getElementById("league");sp.onchange=()=>lg.innerHTML=(LEAGUES[sp.value]||["全部"]).map(x=>`<option>${x}</option>`).join("");document.querySelectorAll(".type").forEach(c=>c.onchange=()=>{const all=[...document.querySelectorAll(".type")].find(x=>x.value==="全部");if(c.value==="全部"&&c.checked)document.querySelectorAll(".type").forEach(x=>{if(x!==all)x.checked=false});else if(c.value!=="全部"&&c.checked&&all)all.checked=false});document.getElementById("save").onclick=()=>{const types=[...document.querySelectorAll(".type:checked")].map(x=>x.value);sections[i]={...sections[i],name:document.getElementById("name").value.trim()||sections[i].name,sport:sp.value,league:lg.value,types:types.length?types:["全部"],hours:Number(document.getElementById("hours").value)};save();status="日報已更新";render();loadNews()}}
+function del(i){sections.splice(i,1);save();render()}
+async function loadNews(){
+  status="正在更新新聞…";render();
+  try{
+    const payload={sections:sections.length?sections:[{sport:"棒球",league:"全部",contentTypes:["全部"],hours:24}]};
+    const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const d=await r.json(); if(!r.ok)throw new Error(d.error||`HTTP ${r.status}`);
+    news=Array.isArray(d.items)?d.items:[];
+    status=news.length?`已更新 ${news.length} 則新聞`:(d.errors?.length?d.errors.join("；"):"目前沒有符合條件的新聞");
+    render();
+  }catch(e){status="新聞更新失敗："+e.message;render()}
+}
+document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>go(b.dataset.page));render();loadNews();
+</script>
+</body></html>
