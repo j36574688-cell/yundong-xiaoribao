@@ -76,18 +76,77 @@ const SPORT_LEAGUES = {
 
 
 const ESPORTS_SITES = {
-  "League of Legends":["lolesports.com","inven.co.kr","wanplus.cn","esportsinsider.com"],
-  LCK:["lolesports.com","inven.co.kr","fmkorea.com","gosugamers.net"],
-  LPL:["lolesports.com","wanplus.cn","gosugamers.net","esportsinsider.com"],
-  LEC:["lolesports.com","sheepesports.com","esportsinsider.com","dexerto.com"],
-  LCS:["lolesports.com","esportsinsider.com","esports.gg","dexerto.com"],
-  Valorant:["valorantesports.com","vlr.gg","thespike.gg","esportsinsider.com"],
-  VCT:["valorantesports.com","vlr.gg","thespike.gg","rib.gg"],
-  CS2:["hltv.org","blast.tv","esl.com","liquipedia.net"],
-  BLAST:["blast.tv","hltv.org","esl.com","liquipedia.net"],
-  ESL:["esl.com","hltv.org","liquipedia.net","esportsinsider.com"],
-  "Dota 2":["dota2.com","gosugamers.net","liquipedia.net","esportsinsider.com"]
+  "League of Legends":["lolesports.com","invenglobal.com","sheepesports.com","dotesports.com","esportsinsider.com","dexerto.com","dailyesports.com"],
+  LCK:["lolesports.com","invenglobal.com","dailyesports.com","fomos.kr","inven.co.kr","sheepesports.com","dexerto.com"],
+  LPL:["lolesports.com","wanplus.cn","invenglobal.com","dotesports.com","esportsinsider.com","dexerto.com","sheepesports.com"],
+  LEC:["lolesports.com","sheepesports.com","dotesports.com","esportsinsider.com","dexerto.com","esports.gg","invenglobal.com"],
+  LCS:["lolesports.com","sheepesports.com","dotesports.com","esports.gg","esportsinsider.com","dexerto.com","invenglobal.com"],
+  Valorant:["valorantesports.com","vlr.gg","thespike.gg","esports.gg","dotesports.com","esportsinsider.com","sheepesports.com","dexerto.com"],
+  VCT:["valorantesports.com","vlr.gg","thespike.gg","esports.gg","dotesports.com","esportsinsider.com","sheepesports.com","dexerto.com"],
+  CS2:["hltv.org","dust2.us","blast.tv","esl.com","esports.gg","dotesports.com","esportsinsider.com","escorenews.com"],
+  BLAST:["blast.tv","hltv.org","dust2.us","esl.com","esports.gg","dotesports.com","escorenews.com"],
+  ESL:["esl.com","hltv.org","dust2.us","esports.gg","dotesports.com","esportsinsider.com","escorenews.com"],
+  "Dota 2":["dota2.com","gosugamers.net","escorenews.com","dotesports.com","esportsinsider.com","esports.gg","liquipedia.net"]
 };
+
+const ESPORTS_BATCHES = {
+  "League of Legends":[["lolesports.com","invenglobal.com","sheepesports.com","dotesports.com"],["esportsinsider.com","dexerto.com","dailyesports.com","inven.co.kr"]],
+  LCK:[["lolesports.com","invenglobal.com","dailyesports.com","fomos.kr"],["inven.co.kr","sheepesports.com","dexerto.com"]],
+  LPL:[["lolesports.com","wanplus.cn","invenglobal.com","dotesports.com"],["esportsinsider.com","dexerto.com","sheepesports.com"]],
+  LEC:[["lolesports.com","sheepesports.com","dotesports.com","esportsinsider.com"],["dexerto.com","esports.gg","invenglobal.com"]],
+  LCS:[["lolesports.com","sheepesports.com","dotesports.com","esports.gg"],["esportsinsider.com","dexerto.com","invenglobal.com"]],
+  Valorant:[["valorantesports.com","vlr.gg","thespike.gg","esports.gg"],["dotesports.com","esportsinsider.com","sheepesports.com","dexerto.com"]],
+  VCT:[["valorantesports.com","vlr.gg","thespike.gg","esports.gg"],["dotesports.com","esportsinsider.com","sheepesports.com","dexerto.com"]],
+  CS2:[["hltv.org","dust2.us","blast.tv","esl.com"],["esports.gg","dotesports.com","esportsinsider.com","escorenews.com"]],
+  BLAST:[["blast.tv","hltv.org","dust2.us","esl.com"],["esports.gg","dotesports.com","escorenews.com"]],
+  ESL:[["esl.com","hltv.org","dust2.us","esports.gg"],["dotesports.com","esportsinsider.com","escorenews.com"]],
+  "Dota 2":[["dota2.com","gosugamers.net","escorenews.com","dotesports.com"],["esportsinsider.com","esports.gg","liquipedia.net"]]
+};
+
+const ESPORTS_RULES = {
+  "League of Legends":{required:["league of legends","lol esports","lolesports","lol"],competitive:["lck","lpl","lec","lcs","worlds","msi","playoff","final","tournament","esports","roster","team","player"]},
+  LCK:{required:["lck","league of legends champions korea","한국프로","한국 리그오브레전드","롤"],competitive:["lck","playoff","final","roster","team","player","coach","league of legends"]},
+  LPL:{required:["lpl","league of legends pro league","china league of legends","英雄联盟","中國英雄聯盟"],competitive:["lpl","playoff","final","roster","team","player","coach","league of legends"]},
+  LEC:{required:["lec","league of legends emea championship","league of legends","emea"],competitive:["lec","playoff","final","roster","team","player","coach","league of legends"]},
+  LCS:{required:["lcs","league of legends championship series","league of legends","nacl","north america"],competitive:["lcs","playoff","final","roster","team","player","coach","league of legends"]},
+  Valorant:{required:["valorant","valorant esports","valorant champions","vct","game changers","challengers"],competitive:["valorant","vct","champions","game changers","challengers","roster","team","player","tournament"]},
+  VCT:{required:["vct","valorant champions tour","valorant","valorant esports"],competitive:["vct","valorant","champions","masters","kickoff","stage","playoff","roster","team","player"]},
+  CS2:{required:["counter-strike 2","counter strike 2","cs2","counter-strike","counter strike","iem","major"],competitive:["cs2","counter-strike","major","iem","blast","esl","pgl","roster","team","player","tournament"]},
+  BLAST:{required:["blast","blast premier","blast open","blast bounty","counter-strike","cs2"],competitive:["blast","cs2","counter-strike","premier","open","bounty","roster","team","player","tournament"]},
+  ESL:{required:["esl","esl pro league","counter-strike","cs2"],competitive:["esl","cs2","counter-strike","pro league","challenger","roster","team","player","tournament"]},
+  "Dota 2":{required:["dota 2","dota2","the international","ti 2026","pgl","esl one","dreamleague"],competitive:["dota 2","dota2","the international","ti","pgl","esl one","dreamleague","roster","team","player","tournament"]}
+};
+
+const ESPORTS_NOISE=/\b(guides?|walkthrough|builds?|tier list|tier-list|skins?|codes?|redeem|patch notes?|system requirements?|settings?|crosshair|sensitivity|how to|best .* settings|dataminer|datamining)\b|攻略|教學|造型|造型包|配裝|設定|靈敏度|準心|代碼|兌換碼|外掛|洩漏|漏洞/i;
+
+function esportsAccept(title,section,url=''){
+  if(section?.sport!=='電競') return true;
+  const league=String(section?.league||'全部');
+  const text=String(title||'').toLowerCase();
+  const domain=domainOf(url);
+  const known=league!=='全部'?(ESPORTS_SITES[league]||[]):Object.values(ESPORTS_SITES).flat();
+  const sourceIsKnown=known.some(d=>domain===d||domain.endsWith('.'+d));
+  if(league==='全部'){
+    const gameSignals=['league of legends','lol esports','valorant','vct','counter-strike','counter strike','cs2','dota 2','dota2','lck','lpl','lec','lcs','blast','esl'];
+    if(!sourceIsKnown && !gameSignals.some(x=>text.includes(x))) return false;
+    if(ESPORTS_NOISE.test(title) && !/\b(esports|vct|lck|lpl|lec|lcs|blast|esl|counter[- ]strike|cs2|dota ?2|league of legends|valorant)\b/i.test(title)) return false;
+    return true;
+  }
+  const rule=ESPORTS_RULES[league];
+  if(!rule) return sourceIsKnown;
+  const requiredHit=rule.required.some(x=>text.includes(x));
+  const competitiveHit=rule.competitive.some(x=>text.includes(x));
+  if(!sourceIsKnown && !requiredHit) return false;
+  if(ESPORTS_NOISE.test(title) && !competitiveHit) return false;
+  if(league==='LCK' && /\b(lpl|lec|lcs)\b/i.test(title) && !/\blck\b/i.test(title)) return false;
+  if(league==='LPL' && /\b(lck|lec|lcs)\b/i.test(title) && !/\blpl\b/i.test(title)) return false;
+  if(league==='LEC' && /\b(lck|lpl|lcs)\b/i.test(title) && !/\blec\b/i.test(title)) return false;
+  if(league==='LCS' && /\b(lck|lpl|lec)\b/i.test(title) && !/\blcs\b/i.test(title)) return false;
+  if(league==='VCT' && /\b(cs2|counter[- ]strike|league of legends|dota ?2)\b/i.test(title) && !/\b(vct|valorant)\b/i.test(title)) return false;
+  if(league==='CS2' && /\b(valorant|vct|league of legends|dota ?2)\b/i.test(title) && !/\b(cs2|counter[- ]strike|iem|major)\b/i.test(title)) return false;
+  if(league==='Dota 2' && /\b(cs2|counter[- ]strike|valorant|vct|league of legends)\b/i.test(title) && !/\bdota ?2\b/i.test(title)) return false;
+  return requiredHit || sourceIsKnown;
+}
 
 const TYPE = {
   "比賽結果":/final score|box score|game result|won|win over|beat|defeat|victory|lost to|勝|敗|比分|戰勝|擊敗|賽果|終場/i,
@@ -128,7 +187,7 @@ function classify(title){let hits=Object.entries(TYPE).filter(([,r])=>r.test(tit
 function parseRss(xml,lang){const out=[];const items=String(xml).match(/<item>[\s\S]*?<\/item>/gi)||[];for(const item of items){const m=(tag)=>{const x=item.match(new RegExp(`<${tag}(?:[^>]*)>([\\s\\S]*?)<\\/${tag}>`,'i'));return x?clean(x[1]):''};const title=m('title');const link=m('link')||((item.match(/<link>([^<]+)/i)||[])[1]||'');const pub=m('pubDate')||m('published')||m('updated');const sm=item.match(/<source[^>]*>([\s\S]*?)<\/source>/i);const source=sm?clean(sm[1]):'Google News';if(title&&link)out.push({title,url:link,sourceName:source,publishedAt:parseDate(pub),language:lang});}return out;}
 async function fetchText(url,ms=4500){const ac=new AbortController();const timer=setTimeout(()=>ac.abort(),ms);try{const r=await fetch(url,{signal:ac.signal,headers:{'user-agent':'SportsDaily/7.0','accept':'application/rss+xml,application/xml,text/xml'}});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.text();}finally{clearTimeout(timer);}}
 function googleUrl(q,market){const [lang,cc]=market.split('-');return `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=${encodeURIComponent(market)}&gl=${cc}&ceid=${cc}:${lang}`;}
-function queryFor(section,cfg){const league=section.league||'全部';const sport=section.sport||'棒球';const terms=league!=='全部'?(LEAGUE[league]||[league]):([sport,...(SPORT_LEAGUES[sport]||[])]);const t=terms.slice(0,6).map(x=>`"${x}"`).join(' OR ');const domains=ESPORTS_SITES[league]||((sport==='電競')?['lolesports.com','hltv.org','vlr.gg','blast.tv','esl.com','gosugamers.net']:cfg.domains);const sites=domains.slice(0,6).map(x=>`site:${x}`).join(' OR ');return `(${t}) (${sites}) when:${Math.min(7,Math.max(1,Math.ceil((Number(section.hours)||24)/24)))}d`;}
+function queryFor(section,cfg,batchIndex=0){const league=section.league||'全部';const sport=section.sport||'棒球';const terms=league!=='全部'?(LEAGUE[league]||[league]):([sport,...(SPORT_LEAGUES[sport]||[])]);const t=terms.slice(0,6).map(x=>`\"${x}\"`).join(' OR ');const batches=ESPORTS_BATCHES[league]||((sport==='電競')?[["lolesports.com","hltv.org","vlr.gg","blast.tv"],["esl.com","gosugamers.net","esports.gg","dotesports.com"]]:null);const domains=batches?batches[batchIndex%batches.length]:(ESPORTS_SITES[league]||cfg.domains).slice(0,6);const sites=domains.map(x=>`site:${x}`).join(' OR ');return `(${t}) (${sites}) when:${Math.min(7,Math.max(1,Math.ceil((Number(section.hours)||24)/24)))}d`;}
 function countryList(section){if(section.league&&PACK[section.league])return PACK[section.league].filter(x=>COUNTRY[x]).slice(0,4);if(section.sport&&SPORT_COUNTRIES[section.sport])return SPORT_COUNTRIES[section.sport].filter(x=>COUNTRY[x]).slice(0,4);return ['US','GB','JP','KR'];}
 function domainOf(url){
   try{return new URL(String(url||'')).hostname.replace(/^www\./,'').toLowerCase();}
@@ -153,7 +212,41 @@ function leagueAccept(title,section,url=''){
   return false;
 }
 function buildArticle(raw,section){const eventTypes=classify(raw.title);return {...raw,sport:section.sport,league:section.league,eventType:eventTypes[0],eventTypes,eventId:`${section.sport}|${section.league}|${norm(raw.title)}`,sourceCount:1,languages:[raw.language],relatedSources:[raw.sourceName]};}
-async function one(section){const map=new Map();const countries=countryList(section);const jobs=[];for(const code of countries){const cfg=COUNTRY[code];if(!cfg)continue;jobs.push(fetchText(googleUrl(queryFor(section,cfg),cfg.market)).then(x=>[code,parseRss(x,cfg.market)]).catch(()=>[code,[]]));}const rs=await Promise.all(jobs);for(const [code,items] of rs){for(const raw of items){const title=raw.title;if(LOW_VALUE.test(title) && classify(title)[0]==='其他重要新聞')continue;if(!leagueAccept(title,section,raw.url))continue;const a=buildArticle(raw,section);const k=norm(title);if(!k)continue;const old=map.get(k);if(!old)map.set(k,a);else{old.sourceCount++;for(const l of a.languages)if(!old.languages.includes(l))old.languages.push(l);if(!old.relatedSources.includes(a.sourceName))old.relatedSources.push(a.sourceName);for(const t of a.eventTypes)if(!old.eventTypes.includes(t)&&t!=='其他重要新聞')old.eventTypes.push(t);if(Date.parse(a.publishedAt)>Date.parse(old.publishedAt))Object.assign(old,{title:a.title,url:a.url,sourceName:a.sourceName,publishedAt:a.publishedAt});}}}return Array.from(map.values()).sort((a,b)=>b.sourceCount-a.sourceCount||Date.parse(b.publishedAt)-Date.parse(a.publishedAt)).slice(0,80);}
+async function one(section){
+  const map=new Map();
+  const countries=countryList(section);
+  const esports=section.sport==='電競';
+  const jobs=[];
+  for(const code of countries){
+    const cfg=COUNTRY[code];
+    if(!cfg) continue;
+    const batches=esports?(ESPORTS_BATCHES[section.league]||ESPORTS_BATCHES["League of Legends"]):[null];
+    const n=esports?Math.min(2,batches.length):1;
+    for(let b=0;b<n;b++) jobs.push(fetchText(googleUrl(queryFor(section,cfg,b),cfg.market)).then(x=>[code,parseRss(x,cfg.market)]).catch(()=>[code,[]]));
+  }
+  const rs=await Promise.all(jobs);
+  for(const [code,items] of rs){
+    for(const raw of items){
+      const title=raw.title;
+      const types=classify(title);
+      if(LOW_VALUE.test(title)&&types[0]==='其他重要新聞') continue;
+      if(esports&&!esportsAccept(title,section,raw.url)) continue;
+      if(!leagueAccept(title,section,raw.url)) continue;
+      const a=buildArticle(raw,section);
+      a.eventTypes=types;a.eventType=types[0];
+      const k=norm(title); if(!k) continue;
+      const old=map.get(k);
+      if(!old) map.set(k,a); else {
+        old.sourceCount++;
+        for(const l of a.languages) if(!old.languages.includes(l)) old.languages.push(l);
+        if(!old.relatedSources.includes(a.sourceName)) old.relatedSources.push(a.sourceName);
+        for(const t of a.eventTypes) if(!old.eventTypes.includes(t)&&t!=='其他重要新聞') old.eventTypes.push(t);
+        if(Date.parse(a.publishedAt)>Date.parse(old.publishedAt)) Object.assign(old,{title:a.title,url:a.url,sourceName:a.sourceName,publishedAt:a.publishedAt,language:a.language});
+      }
+    }
+  }
+  return Array.from(map.values()).sort((a,b)=>b.sourceCount-a.sourceCount||Date.parse(b.publishedAt)-Date.parse(a.publishedAt)).slice(0,100);
+}
 
 module.exports = async (req,res)=>{
   res.setHeader('Access-Control-Allow-Origin','*');
