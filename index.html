@@ -40,8 +40,9 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:17px;margin:0 0 6px}.count{font-si
 </div></nav>
 
 <script>
-const API="https://rspeslnhsvkjremawtcd.supabase.co/functions/v1/news-v22";
-const API_TIMEOUT=15000;
+const API="/api/news";
+const API_TIMEOUT=90000;
+const AUTO_TEST_TIMEOUT=90000;
 let autoTestState={running:false,done:0,total:0,results:[]};
 
 const AUTO_TESTS=[
@@ -947,55 +948,59 @@ function autoTestResultsHtml(){
 async function runAutoTests(){
   if(autoTestState.running)return;
   autoTestState={running:true,done:0,total:AUTO_TESTS.length,results:[]};
-  status="自動測試開始：不會修改你的日報設定…";
+  status="自動測試開始：會逐項測試，不會修改你的日報設定…";
   render();
 
-  const testSections=AUTO_TESTS.map((x,i)=>({
-    id:`auto-test-${Date.now()}-${i}`,
-    name:x.name,
-    sport:x.sport,
-    league:x.league,
-    contentTypes:x.contentTypes,
-    hours:x.hours
-  }));
-
-  try{
-    const d=await fetchNewsBatch(testSections);
-    const returned=Array.isArray(d.items)?d.items:[];
-    const errors=Array.isArray(d.errors)?d.errors:[];
-    const results=[];
-
-    for(const section of testSections){
+  const results=[];
+  for(let i=0;i<AUTO_TESTS.length;i++){
+    const x=AUTO_TESTS[i];
+    const section={
+      id:`auto-test-${Date.now()}-${i}`,
+      name:x.name,
+      sport:x.sport,
+      league:x.league,
+      contentTypes:x.contentTypes,
+      hours:x.hours
+    };
+    try{
+      status=`自動測試中：${i+1}/${AUTO_TESTS.length} ${x.name}`;
+      render();
+      const d=await fetchNewsBatch([section],AUTO_TEST_TIMEOUT);
+      const returned=Array.isArray(d.items)?d.items:[];
+      const errors=Array.isArray(d.errors)?d.errors:[];
       const safe=normalizeSection(section);
       const own=returned.filter(n=>String(n.sectionId||"")===String(safe.id));
       const mapped=own.length
-        ? own
-        : returned.filter(n=>String(n.sport||"")===safe.sport && (safe.league==="全部" || String(n.league||"")===safe.league));
+        ?own
+        :returned.filter(n=>String(n.sport||"")===safe.sport && (safe.league==="全部" || String(n.league||"")===safe.league));
       const selected=(safe.contentTypes||[]).filter(x=>x!=="全部");
       const typed=selected.length?mapped.filter(n=>selected.some(t=>matchesType(n,t))):mapped;
       const wrongRoute=own.filter(n=>String(n.sport||"")!==safe.sport || (safe.league!=="全部" && String(n.league||"")!==safe.league));
-      const sourceMeta=errors.length?"部分來源回應異常":"API 正常";
-
-      let status="ok",detail=`${typed.length} 則符合條件；${sourceMeta}`;
-      if(wrongRoute.length){status="bad";detail=`發現 ${wrongRoute.length} 則分區路由錯誤，預期 ${safe.sport}/${safe.league}`;}
-      else if(mapped.length===0){status="warn";detail=`API 有回應，但目前沒有符合條件的新聞；${sourceMeta}`;}
-      else if(selected.length && typed.length!==mapped.length){status="bad";detail=`內容類型過濾失效：${mapped.length} 則中只有 ${typed.length} 則符合 ${selected.join("、")}`;}
-      else if(errors.length){status="warn";detail=`${typed.length} 則符合條件；${sourceMeta}`;}
-      results.push({name:safe.name,status,detail});
-      autoTestState.done++;
+      const sourceMeta=errors.length?`部分來源異常（${errors.length}）`:"API 正常";
+      let rowStatus="ok",detail=`${typed.length} 則符合條件；${sourceMeta}`;
+      if(wrongRoute.length){
+        rowStatus="bad";detail=`發現 ${wrongRoute.length} 則分區路由錯誤，預期 ${safe.sport}/${safe.league}`;
+      }else if(selected.length && mapped.length>0 && typed.length!==mapped.length){
+        rowStatus="bad";detail=`內容類型過濾失效：${mapped.length} 則中只有 ${typed.length} 則符合 ${selected.join("、")}`;
+      }else if(mapped.length===0){
+        rowStatus=errors.length?"bad":"warn";
+        detail=errors.length?`API 有回應但來源出錯；${sourceMeta}`:`API 有回應，但目前沒有符合條件的新聞`;
+      }else if(errors.length){
+        rowStatus="warn";detail=`${typed.length} 則符合條件；${sourceMeta}`;
+      }
+      results.push({name:safe.name,status:rowStatus,detail});
+    }catch(e){
+      results.push({name:x.name,status:"bad",detail:String(e?.message||e)});
     }
-    autoTestState.results=results;
-    const bad=results.filter(x=>x.status==="bad").length;
-    const warn=results.filter(x=>x.status==="warn").length;
-    status=bad?`自動測試完成：${bad} 個失敗、${warn} 個警告`:`自動測試完成：${results.length-warn} 個通過、${warn} 個警告`;
-  }catch(e){
-    autoTestState.results=[{name:"整體 API",status:"bad",detail:String(e?.message||e)}];
-    autoTestState.done=autoTestState.total;
-    status=`自動測試失敗：${String(e?.message||e)}`;
-  }finally{
-    autoTestState.running=false;
+    autoTestState.done=i+1;
+    autoTestState.results=[...results];
     render();
   }
+  const bad=results.filter(x=>x.status==="bad").length;
+  const warn=results.filter(x=>x.status==="warn").length;
+  autoTestState.running=false;
+  status=bad?`自動測試完成：${bad} 個失敗、${warn} 個警告`:`自動測試完成：${results.length-warn} 個通過、${warn} 個警告`;
+  render();
 }
 
 function render(){
@@ -1256,9 +1261,9 @@ async function browserFallbackForSection(section){
   return Array.from(uniq.values());
 }
 
-async function fetchNewsBatch(list){
+async function fetchNewsBatch(list,timeoutMs=API_TIMEOUT){
   const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),API_TIMEOUT);
+  const timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
     const r=await fetch(API,{
       method:"POST",
