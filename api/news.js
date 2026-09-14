@@ -67,6 +67,9 @@ const PACK = {
   'League of Legends':['KR','CN','US','DE'], LCK:['KR'], LPL:['CN'], LEC:['DE','FR','ES','GB'], LCS:['US','CA'], Valorant:['KR','US','BR','DE'], VCT:['KR','US','BR','DE'], CS2:['DE','GB','US','FR'], BLAST:['DK','GB','DE','FR'], ESL:['DE','GB','US','FR'], 'Dota 2':['CN','US','DE','SE'],
   'Rugby World Cup':['GB','FR','NZ','AU'], 'Six Nations':['GB','FR','IE'], 'The Rugby Championship':['NZ','AU','ZA','AR'], NFL:['US','CA'], NCAA:['US'], 'Super Bowl':['US','CA'], IHF:['DE','FR','ES','DK'], EHF:['DE','FR','ES','DK'], FIH:['NL','IN','DE','BE'], 'Hockey World Cup':['NL','IN','DE','BE'], FIS:['AT','CH','NO','SE'], 'World Archery':['KR','CN','US','FR'], FIE:['FR','IT','HU','US'], IWF:['CN','US','DE','GB'], IJF:['JP','FR','BR'], 'World Taekwondo':['KR','US','FR','GB'], FEI:['GB','DE','FR','US'], 'World Triathlon':['GB','US','AU','ES'], IRONMAN:['US','AU','GB','ES']
 };
+const SPORT_COUNTRIES = {
+  棒球:['JP','US','KR','TW'], 籃球:['US','CA','ES','FR'], 足球:['GB','ES','IT','DE','FR','BR'], 網球:['US','GB','FR','ES'], 賽車:['GB','IT','ES','FR'], 羽球:['MY','ID','JP','KR'], 桌球:['CN','JP','KR','DE'], 排球:['IT','BR','PL','JP'], 冰球:['CA','US','SE','FI'], 高爾夫:['US','GB','JP','AU'], 拳擊:['US','GB','MX','BR'], MMA:['US','GB','BR'], 田徑:['US','GB','FR','DE'], 游泳:['US','AU','GB','JP'], 體操:['US','JP','GB','FR'], 自行車:['FR','IT','ES','BE'], 電競:['KR','CN','US','DE'], 橄欖球:['GB','FR','NZ','AU'], 美式足球:['US','CA'], 手球:['DE','FR','ES','DK'], 曲棍球:['NL','IN','DE','BE'], 滑雪:['AT','CH','NO','SE'], 射箭:['KR','CN','US','FR'], 擊劍:['FR','IT','HU','US'], 舉重:['CN','US','DE','GB'], 柔道:['JP','FR','BR'], 跆拳道:['KR','US','FR','GB'], 馬術:['GB','DE','FR','US'], 三鐵:['GB','US','AU','ES']
+};
 const SPORT_LEAGUES = {
   棒球:['MLB','NPB','KBO','CPBL','WBC','WBSC','MiLB'], 籃球:['NBA','WNBA','FIBA','EuroLeague','P.LEAGUE+','T1','SBL'], 足球:['世界盃','歐冠','英超','西甲','意甲','德甲','法甲','MLS'], 網球:['ATP','WTA','四大滿貫','Davis Cup','Billie Jean King Cup'], 賽車:['F1','MotoGP','WEC','NASCAR','IndyCar','Formula E','Formula 2'], 羽球:['BWF','湯姆斯盃','尤伯盃','蘇迪曼盃'], 桌球:['WTT','ITTF'], 排球:['VNL','FIVB'], 冰球:['NHL','IIHF'], 高爾夫:['PGA','LPGA','DP World Tour','Ryder Cup','U.S. Open'], 拳擊:['WBC Boxing','WBA','IBF','WBO'], MMA:['UFC','PFL','ONE Championship','Bellator'], 田徑:['World Athletics','Diamond League'], 游泳:['World Aquatics'], 體操:['FIG'], 自行車:['UCI','Tour de France','Giro d’Italia','Vuelta a España'], 電競:['League of Legends','LCK','LPL','LEC','LCS','Valorant','VCT','CS2','BLAST','ESL','Dota 2'], 橄欖球:['Rugby World Cup','Six Nations','The Rugby Championship'], 美式足球:['NFL','NCAA','Super Bowl'], 手球:['IHF','EHF'], 曲棍球:['FIH','Hockey World Cup'], 滑雪:['FIS'], 射箭:['World Archery'], 擊劍:['FIE'], 舉重:['IWF'], 柔道:['IJF'], 跆拳道:['World Taekwondo'], 馬術:['FEI'], 三鐵:['World Triathlon','IRONMAN']
 };
@@ -111,15 +114,37 @@ function parseRss(xml,lang){const out=[];const items=String(xml).match(/<item>[\
 async function fetchText(url,ms=4500){const ac=new AbortController();const timer=setTimeout(()=>ac.abort(),ms);try{const r=await fetch(url,{signal:ac.signal,headers:{'user-agent':'SportsDaily/7.0','accept':'application/rss+xml,application/xml,text/xml'}});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.text();}finally{clearTimeout(timer);}}
 function googleUrl(q,market){const [lang,cc]=market.split('-');return `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=${encodeURIComponent(market)}&gl=${cc}&ceid=${cc}:${lang}`;}
 function queryFor(section,cfg){const league=section.league||'全部';const sport=section.sport||'棒球';const terms=league!=='全部'?(LEAGUE[league]||[league]):([sport,...(SPORT_LEAGUES[sport]||[])]);const t=terms.slice(0,6).map(x=>`"${x}"`).join(' OR ');const sites=cfg.domains.slice(0,6).map(x=>`site:${x}`).join(' OR ');return `(${t}) (${sites}) when:${Math.min(7,Math.max(1,Math.ceil((Number(section.hours)||24)/24)))}d`;}
-function countryList(section){if(section.league&&PACK[section.league])return PACK[section.league].filter(x=>COUNTRY[x]).slice(0,4);const l=Object.keys(PACK).find(k=>k===section.league);return (l?PACK[l]:Object.keys(COUNTRY).slice(0,4));}
+function countryList(section){if(section.league&&PACK[section.league])return PACK[section.league].filter(x=>COUNTRY[x]).slice(0,4);if(section.sport&&SPORT_COUNTRIES[section.sport])return SPORT_COUNTRIES[section.sport].filter(x=>COUNTRY[x]).slice(0,4);return ['US','GB','JP','KR'];}
+function domainOf(url){
+  try{return new URL(String(url||'')).hostname.replace(/^www\./,'').toLowerCase();}
+  catch{return '';}
+}
+function leagueAccept(title,section,url=''){
+  const league=String(section.league||'全部');
+  const sport=String(section.sport||'棒球');
+  const text=String(title||'').toLowerCase();
+  if(league==='全部'){
+    const terms=[sport,...(SPORT_LEAGUES[sport]||[])].map(String);
+    return terms.some(t=>text.includes(t.toLowerCase())) || sport==='棒球';
+  }
+  const direct=(LEAGUE[league]||[league]).some(t=>text.includes(String(t).toLowerCase()));
+  if(direct)return true;
+  const domain=domainOf(url);
+  const countries=countryList(section);
+  for(const code of countries){
+    const cfg=COUNTRY[code];
+    if(cfg && cfg.domains.some(d=>domain===d || domain.endsWith('.'+d))) return true;
+  }
+  return false;
+}
 function buildArticle(raw,section){const eventTypes=classify(raw.title);return {...raw,sport:section.sport,league:section.league,eventType:eventTypes[0],eventTypes,eventId:`${section.sport}|${section.league}|${norm(raw.title)}`,sourceCount:1,languages:[raw.language],relatedSources:[raw.sourceName]};}
-async function one(section){const map=new Map();const countries=countryList(section);const jobs=[];for(const code of countries){const cfg=COUNTRY[code];if(!cfg)continue;jobs.push(fetchText(googleUrl(queryFor(section,cfg),cfg.market)).then(x=>[code,parseRss(x,cfg.market)]).catch(()=>[code,[]]));}const rs=await Promise.all(jobs);for(const [code,items] of rs){for(const raw of items){const title=raw.title;if(LOW_VALUE.test(title) && classify(title)[0]==='其他重要新聞')continue;if(!leagueAccept(title,section))continue;const a=buildArticle(raw,section);const k=norm(title);if(!k)continue;const old=map.get(k);if(!old)map.set(k,a);else{old.sourceCount++;for(const l of a.languages)if(!old.languages.includes(l))old.languages.push(l);if(!old.relatedSources.includes(a.sourceName))old.relatedSources.push(a.sourceName);for(const t of a.eventTypes)if(!old.eventTypes.includes(t)&&t!=='其他重要新聞')old.eventTypes.push(t);if(Date.parse(a.publishedAt)>Date.parse(old.publishedAt))Object.assign(old,{title:a.title,url:a.url,sourceName:a.sourceName,publishedAt:a.publishedAt});}}}return Array.from(map.values()).sort((a,b)=>b.sourceCount-a.sourceCount||Date.parse(b.publishedAt)-Date.parse(a.publishedAt)).slice(0,80);}
+async function one(section){const map=new Map();const countries=countryList(section);const jobs=[];for(const code of countries){const cfg=COUNTRY[code];if(!cfg)continue;jobs.push(fetchText(googleUrl(queryFor(section,cfg),cfg.market)).then(x=>[code,parseRss(x,cfg.market)]).catch(()=>[code,[]]));}const rs=await Promise.all(jobs);for(const [code,items] of rs){for(const raw of items){const title=raw.title;if(LOW_VALUE.test(title) && classify(title)[0]==='其他重要新聞')continue;if(!leagueAccept(title,section,raw.url))continue;const a=buildArticle(raw,section);const k=norm(title);if(!k)continue;const old=map.get(k);if(!old)map.set(k,a);else{old.sourceCount++;for(const l of a.languages)if(!old.languages.includes(l))old.languages.push(l);if(!old.relatedSources.includes(a.sourceName))old.relatedSources.push(a.sourceName);for(const t of a.eventTypes)if(!old.eventTypes.includes(t)&&t!=='其他重要新聞')old.eventTypes.push(t);if(Date.parse(a.publishedAt)>Date.parse(old.publishedAt))Object.assign(old,{title:a.title,url:a.url,sourceName:a.sourceName,publishedAt:a.publishedAt});}}}return Array.from(map.values()).sort((a,b)=>b.sourceCount-a.sourceCount||Date.parse(b.publishedAt)-Date.parse(a.publishedAt)).slice(0,80);}
 
 module.exports = async (req,res)=>{
   res.setHeader('Access-Control-Allow-Origin','*');
   res.setHeader('Access-Control-Allow-Methods','POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers','Content-Type');
-  res.setHeader('Cache-Control','s-maxage=120, stale-while-revalidate=600');
+  res.setHeader('Cache-Control','no-store, no-cache, must-revalidate');
   if(req.method==='OPTIONS')return res.status(200).end();
   if(req.method!=='POST')return res.status(405).json({error:'POST only'});
   try{
@@ -127,6 +152,6 @@ module.exports = async (req,res)=>{
     const rr=await Promise.allSettled(sections.map(one));
     const items=[];const errors=[];
     rr.forEach((r,i)=>{if(r.status==='fulfilled')items.push(...r.value);else errors.push(`${sections[i]?.sport||''}/${sections[i]?.league||''}`)});
-    return res.status(200).json({version:'vercel-localized-1',fetchedAt:new Date().toISOString(),items,count:items.length,errors});
-  }catch(e){return res.status(500).json({version:'vercel-localized-1',items:[],count:0,error:String(e)})}
+    return res.status(200).json({version:'vercel-localized-2',fetchedAt:new Date().toISOString(),items,count:items.length,errors});
+  }catch(e){return res.status(500).json({version:'vercel-localized-2',items:[],count:0,error:String(e)})}
 };
