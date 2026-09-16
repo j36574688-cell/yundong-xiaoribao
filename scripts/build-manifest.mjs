@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+import path from 'node:path';
+const root=path.resolve(new URL('..',import.meta.url).pathname);
+const sports=JSON.parse(fs.readFileSync(path.join(root,'config/sports.v1.json'),'utf8'));
+const leagues=JSON.parse(fs.readFileSync(path.join(root,'config/leagues.v1.json'),'utf8'));
+const types=JSON.parse(fs.readFileSync(path.join(root,'config/content-types.v1.json'),'utf8'));
+const sources=JSON.parse(fs.readFileSync(path.join(root,'config/sources.v1.json'),'utf8'));
+const manifest={version:'1.0.0',sports:sports.length,leagueCount:Object.values(leagues).reduce((n,x)=>n+x.length,0),contentTypeCount:types.length,sourceCountryCount:Object.keys(sources.COUNTRY).length,esportsLeagueCount:Object.keys(sources.ESPORTS_SITES).length};
+fs.writeFileSync(path.join(root,'config/manifest.v1.json'),JSON.stringify(manifest,null,2)+'\n');
+console.log(JSON.stringify(manifest,null,2));
