@@ -1,7 +1,7 @@
 {
   "name": "運動小日報",
   "short_name": "運動小日報",
-  "description": "每天幫你整理一下今天的運動",
+  "description": "跨運動新聞精選、個人日報、收藏、追蹤、RSS 與離線閱讀",
   "lang": "zh-Hant",
   "start_url": "/",
   "scope": "/",
@@ -9,7 +9,17 @@
   "background_color": "#f5f7fa",
   "theme_color": "#111827",
   "icons": [
-    {"src":"/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
-    {"src":"/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
