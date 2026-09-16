@@ -12,7 +12,13 @@ const RAW_SOURCE_CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_SECTIONS = 20;
 const MAX_ITEMS_PER_SECTION = 100;
 const MAX_FETCH_CONCURRENCY = 8;
-const CACHE_VERSION='v3';
+const CACHE_VERSION='v4';
+const HIGHLIGHTS_VERSION='x1';
+const HEAT_ALGORITHM_VERSION='v2';
+const SECTION_INDEX_KEY='sd:index:v4:sections';
+const HIGHLIGHTS_KEY_PREFIX='sd:highlights:v4:';
+const HIGHLIGHTS_TTL_MS=20*60*1000;
+const HIGHLIGHTS_HISTORY_DAYS=30;
 const HEALTH_KEY='sd:health:v3';
 const CACHE_HITS_KEY='sd:metrics:v3:cache:hits';
 const CACHE_MISSES_KEY='sd:metrics:v3:cache:misses';
@@ -170,6 +176,18 @@ function typeAccept(title,section){
   return wanted.some(t=>hits.includes(t));
 }
 
+function selectedKeywords(section){
+  const raw=section?.keywords;
+  if(Array.isArray(raw)) return raw.map(x=>clean(x)).filter(Boolean).slice(0,20);
+  return [];
+}
+function keywordMatches(title,section){
+  const kws=selectedKeywords(section);
+  if(!kws.length) return [];
+  const t=String(title||'').toLowerCase();
+  return kws.filter(k=>t.includes(k.toLowerCase()));
+}
+
 function parseRss(xml,lang){
   const out=[];
   const items=String(xml).match(/<item>[\s\S]*?<\/item>/gi)||[];
@@ -270,7 +288,7 @@ function leagueAccept(title,section,url='',sourceUrl=''){
 function buildArticle(raw,section){
   const eventTypes=classify(raw.title,section);
   const stableId='n-'+Buffer.from(`${raw.url||raw.title||''}`).toString('base64url').slice(0,48);
-  return {id:stableId,...raw,sectionId:section.id,sport:section.sport,league:section.league,eventType:eventTypes[0],eventTypes,eventId:`${section.sport}|${section.league}|${norm(raw.title)}`,sourceCount:1,languages:[raw.language],relatedSources:[raw.sourceName]};
+  return {id:stableId,...raw,sectionId:section.id,sport:section.sport,league:section.league,eventType:eventTypes[0],eventTypes,eventId:`${section.sport}|${section.league}|${norm(raw.title)}`,sourceCount:1,languages:[raw.language],relatedSources:[raw.sourceName],matchedKeywords:[]};
 }
 
 function addToCluster(clusters,a){
@@ -295,7 +313,6 @@ function addToCluster(clusters,a){
   }
 }
 
-const HEAT_ALGORITHM_VERSION='v1';
 const CONTENT_WEIGHT={
   '其他重要新聞':0.60,'比賽結果':0.95,'即時戰況':0.80,'賽程':0.65,'晉級／淘汰':0.90,'冠軍／決賽':1.00,
   '球員／選手表現':0.70,'生涯紀錄':0.90,'世界／聯盟紀錄':1.00,'獎項／MVP':0.85,'交易':0.90,'簽約／續約':0.82,
@@ -311,20 +328,34 @@ function freshnessScore(iso){
 function eventCountScore(n){
   return Math.min(1,Math.log2(Math.max(1,n)+1)/Math.log2(7));
 }
+function sourceAuthorityWeight(n){
+  const d=domainOf(n.sourceUrl)||domainOf(n.url);
+  const official=[
+    'mlb.com','mlb.jp','npb.jp','kbo.co.kr','cpbl.com.tw','nba.com','nhl.com','nfl.com',
+    'fifa.com','uefa.com','formula1.com','atptour.com','wtatennis.com','bwfworldtour.com','wtt.com',
+    'lolesports.com','valorantesports.com','blast.tv','esl.com','dota2.com','worldathletics.org','worldaquatics.com'
+  ];
+  if(official.some(x=>d===x||d.endsWith('.'+x))) return 1.15;
+  const reputable=['espn.com','reuters.com','apnews.com','bbc.com','theguardian.com','sports.yahoo.com','cbssports.com','foxsports.com','sponichi.co.jp','nikkansports.com'];
+  if(reputable.some(x=>d===x||d.endsWith('.'+x))) return 1.05;
+  return 1;
+}
+
+function applyHeatV1(items){
+  return items.map(x=>{
+    const sc=x.sourceCount||1; const lc=(x.languages||[]).length||1; const fresh=freshnessScore(x.publishedAt);
+    const weight=CONTENT_WEIGHT[x.eventType]||0.60; const events=eventCountScore(x._clusterArticles||1);
+    const raw=0.25*Math.log(sc+1)+0.15*Math.min(1,lc/3)+0.20*fresh+0.15*weight+0.25*events;
+    return {...x,heat:Math.max(0,Math.min(100,Math.round(raw/1.25*100))),heatAlgorithmVersion:'v1'};
+  });
+}
 function applyHeat(items){
   return items.map(x=>{
-    const sc=x.sourceCount||1;
-    const lc=(x.languages||[]).length||1;
-    const fresh=freshnessScore(x.publishedAt);
-    const weight=CONTENT_WEIGHT[x.eventType]||0.60;
-    const events=eventCountScore(x._clusterArticles||1);
-    const raw=
-      0.25*Math.log(sc+1)+
-      0.15*Math.min(1,lc/3)+
-      0.20*fresh+
-      0.15*weight+
-      0.25*events;
-    return {...x,heat:Math.max(0,Math.min(100,Math.round(raw/1.25*100))),heatAlgorithmVersion:HEAT_ALGORITHM_VERSION};
+    const sc=x.sourceCount||1; const lc=(x.languages||[]).length||1; const fresh=freshnessScore(x.publishedAt);
+    const weight=CONTENT_WEIGHT[x.eventType]||0.60; const events=eventCountScore(x._clusterArticles||1);
+    const authority=sourceAuthorityWeight(x);
+    const raw=(0.23*Math.log(sc+1)+0.14*Math.min(1,lc/3)+0.20*fresh+0.16*weight+0.27*events)*authority;
+    return {...x,heat:Math.max(0,Math.min(100,Math.round(raw/1.35*100))),sourceAuthorityWeight:authority,heatAlgorithmVersion:HEAT_ALGORITHM_VERSION};
   });
 }
 
@@ -349,7 +380,7 @@ async function cacheGet(key){
   }
   if(KV_ENABLED){
     try{
-      const raw=await kvGet(`sd:news:v3:${Buffer.from(key).toString('base64url')}`);
+      const raw=await kvGet(`sd:news:v4:${Buffer.from(key).toString('base64url')}`);
       if(raw){
         const value=JSON.parse(raw);
         const ttl=value?.items?.length?SECTION_CACHE_TTL_MS:EMPTY_CACHE_TTL_MS;
@@ -376,7 +407,9 @@ async function cacheSet(key,value){
   if(KV_ENABLED){
     try{
       const ttl=value?.items?.length?SECTION_CACHE_TTL_MS:EMPTY_CACHE_TTL_MS;
-      await kvSet(`sd:news:v3:${Buffer.from(key).toString('base64url')}`,JSON.stringify(value),ttl);
+      const storageKey=`sd:news:v4:${Buffer.from(key).toString('base64url')}`;
+      await kvSet(storageKey,JSON.stringify(value),ttl);
+      await kvHset(SECTION_INDEX_KEY,Buffer.from(key).toString('base64url'),JSON.stringify({key,updatedAt:value.fetchedAt||new Date().toISOString()}));
     }catch(_){}
   }
 }
@@ -445,12 +478,13 @@ async function one(section){
       const title=raw.title;
       const types=classify(title);
       if(!typeAccept(title,section))continue;
-      if(LOW_VALUE.test(title)&&types[0]==='其他重要新聞')continue;
+      const matchedKeywords=keywordMatches(title,section);
+      if(LOW_VALUE.test(title)&&types[0]==='其他重要新聞'&&!matchedKeywords.length)continue;
       if(sport==='電競'){
         if(!esportsAccept(title,section,raw.url,raw.sourceUrl))continue;
       }else if(!leagueAccept(title,section,raw.url,raw.sourceUrl))continue;
       const a=buildArticle(raw,section);
-      a.eventTypes=types;a.eventType=types[0];
+      a.eventTypes=types;a.eventType=types[0];a.matchedKeywords=matchedKeywords;
       const k=norm(title);if(!k)continue;
       if(map.has(k)){
         const old=map.get(k);
@@ -474,6 +508,91 @@ async function one(section){
   await cacheSet(key,value);
   return value;
 }
+
+
+function percentileRanks(items){
+  const byLeague=new Map();
+  for(const item of items){const k=`${item.sport||''}|${item.league||''}`;if(!byLeague.has(k))byLeague.set(k,[]);byLeague.get(k).push(item);}
+  const rank=new Map();
+  for(const [k,arr] of byLeague){const sorted=[...arr].sort((a,b)=>Number(b.heat||0)-Number(a.heat||0)); const n=sorted.length;
+    sorted.forEach((item,i)=>rank.set(item.id,n<=1?1:(n-i)/n));
+  }
+  return rank;
+}
+
+function buildHighlights(sectionValues,maxItems=5){
+  const pool=[];
+  const seen=new Map();
+  for(const value of sectionValues||[]){
+    for(const item of (value?.items||[])){
+      const key=norm(item.title)||String(item.id);
+      if(!key)continue;
+      const prev=seen.get(key);
+      if(prev){
+        prev.sourceCount=Math.max(Number(prev.sourceCount||1),Number(item.sourceCount||1));
+        prev.relatedSources=[...new Set([...(prev.relatedSources||[]),...(item.relatedSources||[])])];
+        prev.languages=[...new Set([...(prev.languages||[]),...(item.languages||[])])];
+        prev.eventTypes=[...new Set([...(prev.eventTypes||[]),...(item.eventTypes||[])])];
+        continue;
+      }
+      const copy={...item,relatedSources:[...(item.relatedSources||[])],languages:[...(item.languages||[])],eventTypes:[...(item.eventTypes||[])]};
+      seen.set(key,copy);pool.push(copy);
+    }
+  }
+  const pct=percentileRanks(pool);
+  const ranked=pool.map((item)=>{const freshness=freshnessScore(item.publishedAt); const diversity=Math.min(1,Number(item.sourceCount||1)/3); const percentile=pct.get(item.id)||0; const highlightScore=0.60*percentile+0.22*freshness+0.13*diversity+0.05*(Number(item.heat||0)/100); return {...item,highlightPercentile:Math.round(percentile*100),highlightScore:Number(highlightScore.toFixed(4))};})
+    .sort((a,b)=>b.highlightScore-a.highlightScore||Number(b.heat||0)-Number(a.heat||0)||Date.parse(b.publishedAt||'')-Date.parse(a.publishedAt||''));
+  const out=[]; const perSport=new Map();
+  for(const item of ranked){const sport=String(item.sport||''); const n=perSport.get(sport)||0; if(n>=2)continue; out.push(item); perSport.set(sport,n+1); if(out.length>=maxItems)break;}
+  return out.map((item,i)=>({...item,highlightRank:i+1,highlightReason:`${item.highlightPercentile} 百分位聯盟熱度｜${Number(item.sourceCount||1)>1?'多來源交叉':'單一來源'}｜近期性 ${Math.round(freshnessScore(item.publishedAt)*100)}%`}));
+}
+
+async function getSectionCacheByIndex(){
+  const rows=[];
+  if(KV_ENABLED){
+    try{
+      const arr=await kvHgetall(SECTION_INDEX_KEY);
+      if(Array.isArray(arr)){
+        for(let i=0;i<arr.length;i+=2){try{const meta=JSON.parse(String(arr[i+1]||'{}')); if(meta?.key)rows.push(meta.key);}catch(_){} }
+      }
+    }catch(_){ }
+  }
+  if(!rows.length){ for(const [key,v] of memoryNewsCache) if(v?.value) rows.push(key); }
+  const vals=[];
+  for(const key of rows.slice(0,120)){
+    let value=null;
+    if(KV_ENABLED){try{const raw=await kvGet(`sd:news:v4:${Buffer.from(key).toString('base64url')}`); if(raw)value=JSON.parse(raw);}catch(_){} }
+    if(!value){const mem=memoryNewsCache.get(key); value=mem?.value||null;}
+    if(value?.items?.length)vals.push(value);
+  }
+  return vals;
+}
+
+async function saveHighlights(value,dateKey){
+  const key=`${HIGHLIGHTS_KEY_PREFIX}${dateKey}`;
+  const payload={...value,historyKey:dateKey,expiresAt:new Date(Date.now()+HIGHLIGHTS_TTL_MS).toISOString()};
+  if(KV_ENABLED){try{await kvSet(key,JSON.stringify(payload),HIGHLIGHTS_HISTORY_DAYS*24*60*60*1000);}catch(_){} }
+  globalThis.__SD_HIGHLIGHTS_V4={value:payload,time:Date.now(),key};
+  return payload;
+}
+
+async function loadHighlights(dateKey){
+  if(KV_ENABLED){try{const raw=await kvGet(`${HIGHLIGHTS_KEY_PREFIX}${dateKey}`);if(raw)return JSON.parse(raw);}catch(_){} }
+  const mem=globalThis.__SD_HIGHLIGHTS_V4;
+  if(mem?.key===`${HIGHLIGHTS_KEY_PREFIX}${dateKey}` && Date.now()-mem.time<HIGHLIGHTS_TTL_MS)return mem.value;
+  return null;
+}
+
+async function generateHighlights(force=false){
+  const today=new Date().toISOString().slice(0,10);
+  if(!force){const cached=await loadHighlights(today);if(cached)return cached;}
+  let values=await getSectionCacheByIndex();
+  if(!values.length) return saveHighlights({version:HIGHLIGHTS_VERSION,generatedAt:new Date().toISOString(),items:[],count:0,sourceSections:[]},today);
+  const items=buildHighlights(values,5);
+  const sourceSections=[...new Set(values.flatMap(v=>(v.items||[]).map(x=>x.sectionId)).filter(Boolean))];
+  return saveHighlights({version:HIGHLIGHTS_VERSION,generatedAt:new Date().toISOString(),items,count:items.length,sourceSections,algorithm:'cross-sport-percentile+x1'},today);
+}
+
 
 async function healthSnapshot(){
   const rows=new Map();
@@ -500,7 +619,8 @@ async function healthSnapshot(){
   if(KV_ENABLED){
     try{ const [h,m]=await Promise.all([kvGet(CACHE_HITS_KEY),kvGet(CACHE_MISSES_KEY)]); if(h!=null)cacheHits=Number(h)||0; if(m!=null)cacheMisses=Number(m)||0; }catch(_){}
   }
-  return {version:'health-v3',generatedAt:new Date().toISOString(),kvEnabled:KV_ENABLED,cache:{hits:cacheHits,misses:cacheMisses,hitRate:(cacheHits+cacheMisses)?Math.round(cacheHits/(cacheHits+cacheMisses)*100):null},sources:list};
+  const today=new Date().toISOString().slice(0,10); let highlight=null; try{highlight=await loadHighlights(today);}catch(_){} const highlightAge=highlight?.generatedAt?Date.now()-Date.parse(highlight.generatedAt):null;
+  return {version:'health-v4',generatedAt:new Date().toISOString(),kvEnabled:KV_ENABLED,cache:{hits:cacheHits,misses:cacheMisses,hitRate:(cacheHits+cacheMisses)?Math.round(cacheHits/(cacheHits+cacheMisses)*100):null},highlights:{exists:!!highlight,ageMinutes:highlightAge==null?null:Math.round(highlightAge/60000),stale:highlightAge==null?true:highlightAge>30},sources:list};
 }
 
 const CONTRACT_REQUIRED_ITEM_FIELDS=['id','title','url','sourceName','publishedAt','sport','league','eventType','eventTypes','sourceCount','languages','relatedSources','heat','sectionId'];
@@ -519,6 +639,13 @@ function validateContractPayload(d){
   return {ok:true};
 }
 
+async function fetchForRss(section){
+  const value=await one({...section,forceRefresh:false});
+  return value;
+}
+
+async function loadHighlightsForDate(dateKey){ return loadHighlights(String(dateKey)); }
+
 module.exports.__health=healthSnapshot;
 
 module.exports = async (req,res)=>{
@@ -531,7 +658,7 @@ module.exports = async (req,res)=>{
   const cronInternal=String(req.headers?.['x-internal-cron']||'')==='1' && (!process.env.CRON_SECRET || String(req.headers?.authorization||'')===`Bearer ${process.env.CRON_SECRET}`);
   if(!cronInternal){
     const rl=await rateLimit(req,'news',20,60000);
-    if(!rl.ok)return res.status(429).json({version:'vercel-news-v3',configVersion:CONFIG_VERSION,contractVersion:API_CONTRACT_VERSION,items:[],count:0,errors:[`rate_limit_exceeded:${rl.limit}/min`],fetchedAt:new Date().toISOString()});
+    if(!rl.ok)return res.status(429).json({version:'vercel-news-v4',configVersion:CONFIG_VERSION,contractVersion:API_CONTRACT_VERSION,items:[],count:0,errors:[`rate_limit_exceeded:${rl.limit}/min`],fetchedAt:new Date().toISOString()});
   }
   try{
     const forceRefresh=Boolean(req.body?.forceRefresh);
@@ -546,16 +673,22 @@ module.exports = async (req,res)=>{
         if(r.value.cacheHit)cacheHits.push(s.id||`${s.sport}/${s.league}`);
       }else errors.push(`${s.sport||''}/${s.league||''}: ${String(r.reason?.message||r.reason)}`);
     });
-    const payload={version:'vercel-news-v3',configVersion:CONFIG_VERSION,contractVersion:API_CONTRACT_VERSION,heatAlgorithmVersion:HEAT_ALGORITHM_VERSION,fetchedAt:new Date().toISOString(),items,count:items.length,errors,cacheHits};
+    const payload={version:'vercel-news-v4',configVersion:CONFIG_VERSION,contractVersion:API_CONTRACT_VERSION,heatAlgorithmVersion:HEAT_ALGORITHM_VERSION,fetchedAt:new Date().toISOString(),items,count:items.length,errors,cacheHits};
     const check=validateContractPayload(payload);
     if(!check.ok)return res.status(500).json({error:'contract_violation',detail:check.reason,contractVersion:API_CONTRACT_VERSION,items:[],count:0,errors:[check.reason],fetchedAt:new Date().toISOString()});
     return res.status(200).json(payload);
   }catch(e){
-    return res.status(500).json({version:'vercel-news-v3',configVersion:CONFIG_VERSION,contractVersion:API_CONTRACT_VERSION,items:[],count:0,errors:[String(e?.message||e)],fetchedAt:new Date().toISOString()});
+    return res.status(500).json({version:'vercel-news-v4',configVersion:CONFIG_VERSION,contractVersion:API_CONTRACT_VERSION,items:[],count:0,errors:[String(e?.message||e)],fetchedAt:new Date().toISOString()});
   }
 };
 
 if(process.env.NEWS_AUDIT_EXPORT==='1') module.exports.__audit={
   COUNTRY,LEAGUE,PACK,SPORT_COUNTRIES,SPORT_LEAGUES,ESPORTS_SITES,ESPORTS_RULES,TYPE,classify,typeAccept,selectedTypes,queryFor,leagueAccept,esportsAccept,countryList,
-  SPORTS_CONFIG,LEAGUES_CONFIG,TYPES_CONFIG,CONFIG_VERSION,API_CONTRACT_VERSION,HEAT_ALGORITHM_VERSION,validateContractPayload,LOCALE_RESULT_HINTS,CACHE_VERSION,KV_ENABLED,healthSnapshot,cacheKey,localeResultSignal
+  SPORTS_CONFIG,LEAGUES_CONFIG,TYPES_CONFIG,CONFIG_VERSION,API_CONTRACT_VERSION,HEAT_ALGORITHM_VERSION,validateContractPayload,LOCALE_RESULT_HINTS,CACHE_VERSION,KV_ENABLED,healthSnapshot,cacheKey,localeResultSignal,applyHeatV1,applyHeat,sourceAuthorityWeight,selectedKeywords,keywordMatches,buildHighlights
 };
+
+module.exports.__generateHighlights=generateHighlights;
+module.exports.__buildHighlights=buildHighlights;
+module.exports.__loadHighlights=loadHighlightsForDate;
+module.exports.__fetchForRss=fetchForRss;
+module.exports.__rateLimit=rateLimit;

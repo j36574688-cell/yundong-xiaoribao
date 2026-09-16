@@ -21,17 +21,15 @@ function cronAuthorized(req){
 module.exports=async(req,res)=>{
   if(req.method!=='GET')return res.status(405).json({ok:false,error:'GET only'});
   if(!cronAuthorized(req))return res.status(401).json({ok:false,error:'unauthorized'});
-  const fakeRes={
-    code:200,body:null,
-    setHeader(){},
-    status(c){this.code=c;return this;},
-    json(v){this.body=v;return v;},
-    end(){this.body=null;return this;}
-  };
+  const fakeRes={code:200,body:null,setHeader(){},status(c){this.code=c;return this;},json(v){this.body=v;return v;},end(){}};
+  let warmResult=null,highlightResult=null;
   try{
     await news({method:'POST',headers:{'x-internal-cron':'1',authorization:req.headers?.authorization||''},body:{sections:WARM_SECTIONS,forceRefresh:true}},fakeRes);
-    return res.status(fakeRes.code||200).json({ok:(fakeRes.code||200)<300, warmed:WARM_SECTIONS.length, count:Number(fakeRes.body?.count||0), errors:Array.isArray(fakeRes.body?.errors)?fakeRes.body.errors.slice(0,20):[], fetchedAt:new Date().toISOString()});
-  }catch(e){
-    return res.status(200).json({ok:false,warmed:0,count:0,errors:[String(e?.message||e)],fetchedAt:new Date().toISOString()});
-  }
+    warmResult={ok:(fakeRes.code||200)<300,count:Number(fakeRes.body?.count||0),errors:Array.isArray(fakeRes.body?.errors)?fakeRes.body.errors.slice(0,20):[]};
+  }catch(e){warmResult={ok:false,count:0,errors:[String(e?.message||e)]};}
+  try{
+    highlightResult=await news.__generateHighlights(true);
+  }catch(e){highlightResult={ok:false,error:String(e?.message||e),items:[],count:0};}
+  const ok=Boolean(warmResult?.ok);
+  return res.status(200).json({ok,warmed:WARM_SECTIONS.length,count:warmResult?.count||0,errors:warmResult?.errors||[],highlights:{ok:highlightResult?.ok!==false,count:Number(highlightResult?.count||0),version:highlightResult?.version||'x1'},fetchedAt:new Date().toISOString()});
 };
