@@ -33,3 +33,16 @@
 
 Regression Baseline 儲存在瀏覽器 localStorage 的 `sd_auto_test_baseline_v2`。
 第一次執行會建立 baseline；之後執行會顯示狀態變化。
+
+
+## Architecture v3 新增檢查
+
+- localeResultHints（NPB / KBO 等多語言賽果訊號）
+- Cache version v3
+- PWA manifest / service worker
+- /api/health
+- /api/cron
+- Redis fallback 結構
+- Rate limit 結構
+
+所有新增檢查由 `npm test` 自動執行。

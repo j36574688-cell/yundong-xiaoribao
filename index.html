@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <title>運動小日報</title>
 <style>
 :root{--bg:#f5f7fa;--card:#fff;--text:#121826;--muted:#667085;--line:#e4e7ec;--brand:#111827;--soft:#eef2f6;--blue:#2457d6}
@@ -24,6 +29,7 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:17px;margin:0 0 6px}.count{font-si
 .form{display:grid;gap:12px}.label{font-size:13px;font-weight:800;margin-bottom:6px}input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit}
 .types{display:flex;flex-wrap:wrap;gap:8px}.check{display:flex;align-items:center;gap:7px;padding:9px 11px;background:#f8fafc;border:1px solid var(--line);border-radius:12px;font-size:13px}.check input{width:auto}
 .status{padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:13px;margin-bottom:12px}.err{color:#b42318;background:#fff5f5;border-color:#fecdca}
+.health-summary{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.health-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:#f8fafc;font-size:12px}.health-list{display:grid;gap:7px;margin-top:10px}.health-row{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:8px 10px;background:#fff;border:1px solid var(--line);border-radius:10px}.health-name{font-size:12px;font-weight:750}.health-meta{font-size:11px;color:var(--muted);margin-top:2px}.health-good{color:#027a48}.health-warn{color:#8a5a00}.health-bad{color:#b42318}.install-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px}
 .test-panel{background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:12px}.test-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.test-title{font-size:16px;font-weight:850}.test-progress{font-size:12px;color:var(--muted);margin-top:7px}.test-list{margin-top:10px;display:grid;gap:7px}.test-row{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:center;padding:9px 10px;background:#fff;border:1px solid var(--line);border-radius:10px}.test-row.ok{border-color:#c7ead8}.test-row.warn{border-color:#f3dfad}.test-row.bad{border-color:#fecdca}.test-name{font-size:13px;font-weight:750}.test-detail{font-size:11px;color:var(--muted);margin-top:2px}.test-badge{font-size:11px;font-weight:800}
 .bottom{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fffffff4;backdrop-filter:blur(16px);border-top:1px solid var(--line)}.navs{max-width:780px;margin:auto;display:grid;grid-template-columns:repeat(3,1fr);padding:8px 10px calc(8px + env(safe-area-inset-bottom));gap:4px}.nav{background:transparent;border:0;border-radius:13px;padding:8px 5px;font-size:12px}.nav.active{background:var(--soft);font-weight:850}
 @media(min-width:700px){.content{padding:22px}.top{padding-left:22px;padding-right:22px}}
@@ -47,6 +53,7 @@ const AUTO_TEST_TIMEOUT=90000;
 const CONFIG_VERSION="1.0.0";
 const NEWS_BROWSER_CACHE_TTL=5*60*1000;
 let autoTestState={running:false,done:0,total:0,results:[]};
+let healthState={loading:false,data:null,error:""};
 let translateTitles=localStorage.getItem("sd_translate_titles")!=="0";
 const translationCache=(()=>{
   try{
@@ -926,9 +933,36 @@ function settings(){
   </div>
 
   <div class="card">
-    <div class="test-title">🧩 系統版本</div>
-    <div class="muted" style="margin-top:4px">新聞引擎 v2 · API Contract ${esc("1.0")} · Config ${esc(CONFIG_VERSION)} · Heat v1</div>
+    <div class="row">
+      <div>
+        <div class="test-title">📡 來源健康度</div>
+        <div class="muted" style="margin-top:4px">觀察新聞來源通道最近的成功／失敗狀態；不會影響正式新聞。</div>
+      </div>
+      <button class="btn secondary" id="healthRefreshBtn" ${healthState.loading?"disabled":""}>${healthState.loading?"讀取中…":"重新整理"}</button>
+    </div>
+    ${healthState.error?`<div class="note err">${esc(healthState.error)}</div>`:""}
+    ${healthState.data?`
+      <div class="health-summary">
+        <span class="health-pill">KV：${healthState.data.kvEnabled?"✅ 已啟用":"⚪ 未設定"}</span>
+        <span class="health-pill">快取命中率：${healthState.data.cache?.hitRate==null?"—":healthState.data.cache.hitRate+"%"}</span>
+        <span class="health-pill">通道：${healthState.data.sources?.length||0}</span>
+      </div>
+      <div class="health-list">
+        ${(healthState.data.sources||[]).slice(0,20).map(x=>{
+          const total=(x.success||0)+(x.fail||0);
+          const cls=x.fail>0?(x.successRate!=null&&x.successRate<80?"health-bad":"health-warn"):"health-good";
+          const icon=x.fail>0?(x.successRate!=null&&x.successRate<80?"🔴":"🟡"):"🟢";
+          return `<div class="health-row"><div>${icon}</div><div><div class="health-name">${esc(x.id||"unknown")}</div><div class="health-meta">成功 ${x.success||0} · 失敗 ${x.fail||0}${x.lastError?` · ${esc(String(x.lastError).slice(0,80))}`:""}</div></div><div class="${cls}">${total?(x.successRate??0)+"%":"尚無資料"}</div></div>`;
+        }).join("")}
+      </div>
+    `:""}
   </div>
+
+  <div class="card">
+    <div class="test-title">🧩 系統版本</div>
+    <div class="muted" style="margin-top:4px">新聞引擎 v3 · API Contract ${esc("1.0")} · Config ${esc(CONFIG_VERSION)} · Heat v1 · Cache ${esc("v3")}</div>
+  </div>
+
 
   <div id="form">
     ${formHtml()}
@@ -1057,6 +1091,26 @@ async function testTranslationService(){
   }
 }
 
+async function testHealthEndpoint(){
+  try{
+    const r=await fetch('/api/health',{cache:'no-store'});
+    const d=await r.json().catch(()=>({}));
+    const ok=r.ok&&d&&d.version==='health-v3'&&d.cache&&Array.isArray(d.sources);
+    return ok?{name:'來源健康度',status:'ok',detail:`Health API 正常；KV ${d.kvEnabled?'已設定':'未設定 fallback'}`}:{name:'來源健康度',status:'bad',detail:'Health API 回傳格式異常'};
+  }catch(e){return {name:'來源健康度',status:'bad',detail:String(e?.message||e)};}
+}
+
+async function testPwa(){
+  try{
+    const [m,sw]=await Promise.all([
+      fetch('/manifest.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`manifest HTTP ${r.status}`);return r.json()}),
+      fetch('/sw.js',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`sw HTTP ${r.status}`);return r.text()})
+    ]);
+    const ok=m&&m.name==='運動小日報'&&sw.includes("addEventListener('fetch'");
+    return ok?{name:'PWA',status:'ok',detail:'manifest + service worker 正常'}:{name:'PWA',status:'bad',detail:'PWA 檔案格式異常'};
+  }catch(e){return {name:'PWA',status:'bad',detail:String(e?.message||e)};}
+}
+
 function autoTestBaselineDiff(results){
   try{
     const prev=JSON.parse(localStorage.getItem('sd_auto_test_baseline_v2')||'null');
@@ -1077,19 +1131,19 @@ function autoTestBaselineDiff(results){
 
 async function runAutoTests(){
   if(autoTestState.running)return;
-  const total=AUTO_TESTS.length+4;
+  const total=AUTO_TESTS.length+6;
   autoTestState={running:true,done:0,total,results:[]};
-  status='自動測試開始：設定、API 合約、翻譯與新聞分區…';
+  status='自動測試開始：設定、API 合約、翻譯、健康度、PWA 與新聞分區…';
   render();
 
   const results=[];
-  const prelim=[testConfigIntegrity(),testApiContract(),testTranslationService()];
+  const prelim=[testConfigIntegrity(),testApiContract(),testTranslationService(),testHealthEndpoint(),testPwa()];
   const prelimResults=await Promise.allSettled(prelim);
   prelimResults.forEach((r,i)=>{
-    const names=['Config 完整性','API Contract','標題翻譯服務'];
+    const names=['Config 完整性','API Contract','標題翻譯服務','來源健康度','PWA'];
     results.push(r.status==='fulfilled'?r.value:{name:names[i],status:'bad',detail:String(r.reason?.message||r.reason)});
   });
-  autoTestState.done=3;
+  autoTestState.done=5;
   autoTestState.results=[...results];
   render();
 
@@ -1119,7 +1173,7 @@ async function runAutoTests(){
         else if(errors.length){rowStatus='warn';detail=`${typed.length} 則符合；部分來源異常 ${errors.length}`}
         caseResults[i]={name:safe.name,status:rowStatus,detail};
       }catch(e){caseResults[i]={name:x.name,status:'bad',detail:String(e?.message||e)};}
-      autoTestState.done=3+caseResults.filter(Boolean).length;
+      autoTestState.done=5+caseResults.filter(Boolean).length;
       autoTestState.results=[...results,...caseResults.filter(Boolean)];
       render();
     }
@@ -1182,6 +1236,21 @@ async function applyTitleTranslations(){
     if(target)target.textContent=map[original]||original;
     else if(n.classList.contains('focus-title'))n.textContent=map[original]||original;
   });
+}
+
+async function loadHealth(){
+  if(healthState.loading)return;
+  healthState={...healthState,loading:true,error:""};
+  render();
+  try{
+    const r=await fetch('/api/health',{cache:'no-store'});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(d.error||`HTTP ${r.status}`);
+    healthState={loading:false,data:d,error:""};
+  }catch(e){
+    healthState={...healthState,loading:false,error:String(e?.message||e)};
+  }
+  render();
 }
 
 function render(){
@@ -1249,6 +1318,9 @@ function wire(){
   if(autoTestBtn && !autoTestBtn.disabled){
     autoTestBtn.onclick=runAutoTests;
   }
+
+  const healthBtn=document.getElementById("healthRefreshBtn");
+  if(healthBtn && !healthBtn.disabled) healthBtn.onclick=loadHealth;
 
   const translateToggle=document.getElementById("translateToggle");
   if(translateToggle){
@@ -1509,7 +1581,7 @@ async function loadNews(force=false){
   }catch(e){
     newsBySection=previous;
     const cached=Object.values(previous).reduce((sum,v)=>sum+(Array.isArray(v)?v.length:0),0);
-    status=cached>0?`新聞來源暫時無法更新，保留上次 ${cached} 則新聞`:'新聞來源暫時無法取得，請稍後再試';
+    status=cached>0?(navigator.onLine?`新聞來源暫時無法更新，保留上次 ${cached} 則新聞`:`離線資料：保留上次 ${cached} 則新聞，可能非最新`):'新聞來源暫時無法取得，請稍後再試';
   }finally{clearTimeout(timer);}
   render();
 }
@@ -1525,6 +1597,10 @@ try{
   const cached=JSON.parse(localStorage.getItem("sd_news_cache")||"null");
   if(cached&&typeof cached==="object")newsBySection=cached;
 }catch(_e){}
+
+window.addEventListener('offline',()=>{status='目前離線；顯示最後一次成功抓取的新聞資料';render();});
+window.addEventListener('online',()=>{status='已恢復網路；可更新最新新聞';render();});
+if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{});}
 
 render();
 

@@ -1,0 +1,4 @@
+# V3 optional/required production variables
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+CRON_SECRET=
