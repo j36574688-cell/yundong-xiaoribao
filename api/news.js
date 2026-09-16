@@ -144,10 +144,25 @@ function selectedTypes(section){
   if(typeof raw==='string'&&raw.trim()) return [raw.trim()];
   return ['全部'];
 }
+
+// NPB 日本語記事は「試合結果」「勝利」「敗戦」など結果語が見出しに現れやすく、
+// 英語中心の共通 TYPE regex だけでは「比賽結果」に分類できない場合がある。
+// ここでは NPB のみ日本語結果語を補完し、他のスポーツの挙動は変更しない。
+function npbResultSignal(title){
+  const s=String(title||'');
+  return /試合結果|試合終了|試合速報|勝利|敗戦|勝った|敗れた|勝ち|敗れ|勝投手|敗投手|サヨナラ|延長戦|スコア|\b\d+\s*[-－ー]\s*\d+\b/i.test(s);
+}
+function classifyForSection(title,section){
+  const hits=classify(title);
+  if(section?.sport==='棒球' && section?.league==='NPB' && npbResultSignal(title) && !hits.includes('比賽結果')){
+    hits.unshift('比賽結果');
+  }
+  return hits;
+}
 function typeAccept(title,section){
   const wanted=selectedTypes(section);
   if(!wanted.length||wanted.includes('全部')) return true;
-  const hits=classify(title);
+  const hits=classifyForSection(title,section);
   return wanted.some(t=>hits.includes(t));
 }
 
@@ -194,6 +209,9 @@ function queryFor(section,cfg,batchIndex=0,useSites=true){
   const start=(Number(batchIndex)||0)*8;
   const batchTerms=terms.slice(start,start+8);
   const t=(batchTerms.length?batchTerms:terms.slice(0,8)).map(x=>`"${x}"`).join(' OR ');
+  const npbResultHint=(sport==='棒球' && league==='NPB' && selectedTypes(section).includes('比賽結果'))
+    ? ' ("試合結果" OR 勝利 OR 敗戦 OR 試合終了 OR スコア)'
+    : '';
   let domains=[];
   if(ESPORTS_SITES[league]) domains=ESPORTS_SITES[league];
   else if(sport==='電競') domains=Object.values(ESPORTS_SITES).flat();
@@ -201,7 +219,7 @@ function queryFor(section,cfg,batchIndex=0,useSites=true){
   domains=[...new Set(domains)].slice(0,8);
   const sites=domains.map(x=>`site:${x}`).join(' OR ');
   const age=Math.min(7,Math.max(1,Math.ceil((Number(section.hours)||24)/24)));
-  return useSites&&sites?`(${t}) (${sites}) when:${age}d`:`(${t}) when:${age}d`;
+  return useSites&&sites?`(${t})${npbResultHint} (${sites}) when:${age}d`:`(${t})${npbResultHint} when:${age}d`;
 }
 
 function countryList(section){
@@ -373,7 +391,7 @@ async function one(section){
       const ts=Date.parse(raw.publishedAt); if(!Number.isFinite(ts))continue;
       if(Date.now()-ts>hours*3600000)continue;
       const title=raw.title;
-      const types=classify(title);
+      const types=classifyForSection(title,section);
       if(!typeAccept(title,section))continue;
       if(LOW_VALUE.test(title)&&types[0]==='其他重要新聞')continue;
       if(sport==='電競'){
@@ -451,6 +469,6 @@ module.exports = async (req,res)=>{
 };
 
 if(process.env.NEWS_AUDIT_EXPORT==='1') module.exports.__audit={
-  COUNTRY,LEAGUE,PACK,SPORT_COUNTRIES,SPORT_LEAGUES,ESPORTS_SITES,ESPORTS_RULES,TYPE,classify,typeAccept,selectedTypes,queryFor,leagueAccept,esportsAccept,countryList,
+  COUNTRY,LEAGUE,PACK,SPORT_COUNTRIES,SPORT_LEAGUES,ESPORTS_SITES,ESPORTS_RULES,TYPE,classify,classifyForSection,npbResultSignal,typeAccept,selectedTypes,queryFor,leagueAccept,esportsAccept,countryList,
   SPORTS_CONFIG,LEAGUES_CONFIG,TYPES_CONFIG,CONFIG_VERSION,API_CONTRACT_VERSION,HEAT_ALGORITHM_VERSION,validateContractPayload
 };
