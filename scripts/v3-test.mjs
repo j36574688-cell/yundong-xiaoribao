@@ -12,7 +12,7 @@ assert(a.LOCALE_RESULT_HINTS.KBO?.includes('경기결과'),'KBO locale result hi
 assert(a.localeResultSignal('巨人が阪神に勝利、試合終了','NPB'),'NPB Japanese result signal failed');
 assert(a.classify('巨人が阪神に勝利、試合終了',{league:'NPB'}).includes('比賽結果'),'NPB result classification failed');
 const key=a.cacheKey({sport:'冰球',league:'NHL',contentTypes:['全部'],hours:24});
-assert(key.includes('"cacheVersion":"v3"'),'cache key missing v3');
+assert(key.includes('"cacheVersion":"v4"'),'cache key missing v3');
 assert(fs.existsSync(path.join(root,'manifest.json')),'PWA manifest missing');
 assert(fs.existsSync(path.join(root,'sw.js')),'service worker missing');
 assert(fs.existsSync(path.join(root,'api','health.js')),'health endpoint missing');
@@ -23,5 +23,5 @@ const vercel=JSON.parse(fs.readFileSync(path.join(root,'vercel.json'),'utf8'));
 assert(Array.isArray(vercel.crons)&&vercel.crons.some(x=>x.path==='/api/cron'),'Vercel cron missing');
 assert(a.validateContractPayload({items:[],count:0,errors:[],fetchedAt:new Date().toISOString()}).ok,'contract empty payload failed');
 const health=await a.healthSnapshot();
-assert(typeof health==='object' && health.version==='health-v3','health snapshot failed');
+assert(typeof health==='object' && health.version==='health-v4','health snapshot failed');
 console.log('PASS：v3 locale hints、cache version、PWA、health、cron、rate limit 與 Redis fallback structure checks 通過。');

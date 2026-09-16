@@ -28,7 +28,7 @@ if(a){
   if(!eq(sources.ESPORTS_RULES,a.ESPORTS_RULES)) errors.push('sources.v1.json ESPORTS_RULES 不一致');
   if(a.CONFIG_VERSION!=='1.0.0') errors.push(`CONFIG_VERSION 異常：${a.CONFIG_VERSION}`);
   if(a.API_CONTRACT_VERSION!=='1.0') errors.push(`API_CONTRACT_VERSION 異常：${a.API_CONTRACT_VERSION}`);
-  if(a.HEAT_ALGORITHM_VERSION!=='v1') errors.push(`HEAT_ALGORITHM_VERSION 異常：${a.HEAT_ALGORITHM_VERSION}`);
+  if(!['v1','v2'].includes(a.HEAT_ALGORITHM_VERSION)) errors.push(`HEAT_ALGORITHM_VERSION 異常：${a.HEAT_ALGORITHM_VERSION}`);
   const totalLeagues=Object.values(a.SPORT_LEAGUES).reduce((n,x)=>n+x.length,0);
   notes.push(`sports=${auditSports.length}`);
   notes.push(`leagues=${totalLeagues}`);
@@ -40,7 +40,7 @@ if(a){
 for(const f of ['index.html','api/news.js','api/translate.js','config/sports.v1.json','config/leagues.v1.json','config/content-types.v1.json','config/sources.v1.json']){
   if(!fs.existsSync(path.join(root,f)))errors.push(`缺少檔案：${f}`);
 }
-console.log('=== 運動小日報 Architecture v2 Audit ===');
+console.log('=== 運動小日報 Architecture v4 Audit ===');
 console.log(notes.join(' | '));
 if(errors.length){console.error(`FAIL (${errors.length})`);for(const e of errors)console.error('- '+e);process.exit(1);}
 console.log('PASS：config、backend 與核心檔案完整。');
