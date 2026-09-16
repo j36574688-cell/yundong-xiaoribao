@@ -42,8 +42,10 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:17px;margin:0 0 6px}.count{font-si
 
 <script>
 const API="/api/news";
-const API_TIMEOUT=90000;
+const API_TIMEOUT=45000;
 const AUTO_TEST_TIMEOUT=90000;
+const CONFIG_VERSION="1.0.0";
+const NEWS_BROWSER_CACHE_TTL=5*60*1000;
 let autoTestState={running:false,done:0,total:0,results:[]};
 let translateTitles=localStorage.getItem("sd_translate_titles")!=="0";
 const translationCache=(()=>{
@@ -400,20 +402,13 @@ function rankedForSection(s){
       ?Math.max(0,(Date.now()-ts)/3600000)
       :168;
 
-    const sources=Math.max(1,Number(n.sourceCount||1));
-    const langs=Array.isArray(n.languages)
-      ?n.languages.length
-      :Number(n.languageCount||1);
+    const backendHeat=Number(n.heat);
+    const fallbackHeat=
+      Math.max(0,100-age*2.5)+
+      Math.min(20,Math.max(0,Number(n.sourceCount||1)-1)*10)+
+      Math.min(10,Math.max(0,(Array.isArray(n.languages)?n.languages.length:1)-1)*5);
 
-    // 這是「熱度估算」，不是假稱為真實觀看次數。
-    // 每個日報／聯盟各自計算，不會跨聯盟比較。
-    const rawHeat=
-      sources*18 +
-      Math.min(24,langs*6) +
-      Math.max(0,35-age) +
-      (s.contentTypes||[]).filter(x=>x!=="全部").some(t=>classify(n,(s.contentTypes||[]))===t)?12:0;
-
-    return {...n,_rawHeat:rawHeat};
+    return {...n,_rawHeat:Number.isFinite(backendHeat)?backendHeat:fallbackHeat,heatScore:Number.isFinite(backendHeat)?backendHeat:fallbackHeat};
   });
 
   const raws=scored.map(n=>n._rawHeat);
@@ -424,12 +419,11 @@ function rankedForSection(s){
     .map(n=>({
       ...n,
       heatScore:
-        max===min
-          ?Math.round(Math.min(100,n._rawHeat))
-          :Math.round(
-            25+
-            75*(n._rawHeat-min)/(max-min)
-          )
+        Number.isFinite(Number(n.heat))
+          ?Math.max(0,Math.min(100,Math.round(Number(n.heat))))
+          :(max===min
+            ?Math.round(Math.min(100,n._rawHeat))
+            :Math.round(25+75*(n._rawHeat-min)/(max-min)))
     }))
     .sort((a,b)=>
       b.heatScore-a.heatScore
@@ -696,7 +690,7 @@ function home(){
   <div class="card">
     <div class="row">
       <div><h2>運動小日報</h2><div class="muted">今天有 ${total} 則整理後的新聞</div><div class="update-time">${esc(time)}</div></div>
-      <button class="btn primary" onclick="loadNews()">更新</button>
+      <button class="btn primary" onclick="loadNews(true)">更新</button>
     </div>
   </div>
   ${focusHtml()}
@@ -737,7 +731,7 @@ function newsPage(){
 
     <button
       class="btn primary"
-      onclick="loadNews()"
+      onclick="loadNews(true)"
     >
       更新新聞
     </button>
@@ -931,6 +925,11 @@ function settings(){
     </div>
   </div>
 
+  <div class="card">
+    <div class="test-title">🧩 系統版本</div>
+    <div class="muted" style="margin-top:4px">新聞引擎 v2 · API Contract ${esc("1.0")} · Config ${esc(CONFIG_VERSION)} · Heat v1</div>
+  </div>
+
   <div id="form">
     ${formHtml()}
   </div>
@@ -997,17 +996,49 @@ function autoTestResultsHtml(){
   return autoTestState.results.map(x=>`${x.status}:${x.name}:${x.detail}`).join("\n");
 }
 
-async function runAutoTests(){
-  if(autoTestState.running)return;
-  const total=AUTO_TESTS.length+1;
-  autoTestState={running:true,done:0,total,results:[]};
-  status="自動測試開始：先檢查標題翻譯，再逐項測試新聞…";
-  render();
-
-  const results=[];
+async function testConfigIntegrity(){
   try{
-    status="自動測試中：1/"+total+" 標題翻譯服務";
-    render();
+    const [sp,lg,ty]=await Promise.all([
+      fetch('/config/sports.v1.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`sports HTTP ${r.status}`);return r.json()}),
+      fetch('/config/leagues.v1.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`leagues HTTP ${r.status}`);return r.json()}),
+      fetch('/config/content-types.v1.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`types HTTP ${r.status}`);return r.json()})
+    ]);
+    const localSports=SPORTS.slice();
+    const localLeagues={...LEAGUES};
+    const localTypes=TYPES.filter(x=>x!=='全部');
+    const remoteSports=Array.isArray(sp)?sp:[];
+    const remoteLeagues=lg&&typeof lg==='object'?lg:{};
+    const remoteTypes=Array.isArray(ty)?ty:[];
+    const sportMissing=localSports.filter(x=>!remoteSports.includes(x));
+    const sportExtra=remoteSports.filter(x=>!localSports.includes(x));
+    const leagueMismatch=Object.keys(localLeagues).some(k=>JSON.stringify(localLeagues[k].filter(x=>x!=='全部'))!==JSON.stringify((remoteLeagues[k]||[])));
+    const typeMissing=localTypes.filter(x=>!remoteTypes.includes(x));
+    const typeExtra=remoteTypes.filter(x=>!localTypes.includes(x));
+    if(sportMissing.length||sportExtra.length||leagueMismatch||typeMissing.length||typeExtra.length){
+      return {name:'Config 完整性',status:'bad',detail:`設定不一致：sport ${sportMissing.length+sportExtra.length}、league ${leagueMismatch?'有差異':'一致'}、type ${typeMissing.length+typeExtra.length}`};
+    }
+    return {name:'Config 完整性',status:'ok',detail:`${localSports.length} 個運動、${Object.values(localLeagues).reduce((n,a)=>n+a.filter(x=>x!=='全部').length,0)} 個聯盟、${localTypes.length} 個內容類型一致`};
+  }catch(e){
+    return {name:'Config 完整性',status:'bad',detail:String(e?.message||e)};
+  }
+}
+
+async function testApiContract(){
+  try{
+    const d=await fetchNewsBatch([],AUTO_TEST_TIMEOUT);
+    const checks=[
+      ['items',Array.isArray(d.items)],['count',typeof d.count==='number'],['errors',Array.isArray(d.errors)],
+      ['fetchedAt',typeof d.fetchedAt==='string'],['contractVersion',typeof d.contractVersion==='string']
+    ];
+    const bad=checks.filter(x=>!x[1]).map(x=>x[0]);
+    return bad.length?{name:'API Contract',status:'bad',detail:`欄位型別錯誤：${bad.join('、')}`}:{name:'API Contract',status:'ok',detail:`Contract ${d.contractVersion||'unknown'} 格式正常`};
+  }catch(e){
+    return {name:'API Contract',status:'bad',detail:String(e?.message||e)};
+  }
+}
+
+async function testTranslationService(){
+  try{
     const sample=[
       "Toronto Blue Jays in battle for playoff spot",
       "大谷翔平が本塁打を放つ",
@@ -1017,67 +1048,90 @@ async function runAutoTests(){
     const d=await r.json().catch(()=>({}));
     const out=Array.isArray(d.translations)?d.translations:[];
     const badText=out.some(x=>/invalid source language|example:\s*langpair|almost all languages supported|translation error|response error|quota|rate limit|\bhttp\s*\d{3}\b/i.test(String(x||'')));
-    const translatedCount=out.filter((x,i)=>String(x||'').trim() && String(x).trim()!==sample[i] && /[\u3400-\u9fff]/.test(String(x))).length;
-    if(!r.ok || badText){
-      results.push({name:"標題翻譯服務",status:"bad",detail:"翻譯 API 回傳錯誤內容"});
-    }else if(translatedCount===sample.length){
-      results.push({name:"標題翻譯服務",status:"ok",detail:`英文／日文／韓文測試 ${translatedCount}/${sample.length} 通過`});
-    }else{
-      results.push({name:"標題翻譯服務",status:"warn",detail:`翻譯服務可回應，但只有 ${translatedCount}/${sample.length} 筆成功翻譯`});
-    }
+    const translatedCount=out.filter((x,i)=>String(x||'').trim()&&String(x).trim()!==sample[i]&&/[\u3400-\u9fff]/.test(String(x))).length;
+    if(!r.ok||badText)return {name:'標題翻譯服務',status:'bad',detail:'翻譯 API 回傳錯誤內容'};
+    if(translatedCount===sample.length)return {name:'標題翻譯服務',status:'ok',detail:`英文／日文／韓文 ${translatedCount}/${sample.length} 通過`};
+    return {name:'標題翻譯服務',status:'warn',detail:`可回應但成功 ${translatedCount}/${sample.length}`};
   }catch(e){
-    results.push({name:"標題翻譯服務",status:"bad",detail:String(e?.message||e)});
+    return {name:'標題翻譯服務',status:'bad',detail:String(e?.message||e)};
   }
-  autoTestState.done=1;
+}
+
+function autoTestBaselineDiff(results){
+  try{
+    const prev=JSON.parse(localStorage.getItem('sd_auto_test_baseline_v2')||'null');
+    const current=Object.fromEntries(results.map(x=>[x.name,x.status]));
+    if(!prev){
+      localStorage.setItem('sd_auto_test_baseline_v2',JSON.stringify(current));
+      return {name:'Regression Baseline',status:'ok',detail:'已建立第一份 baseline'};
+    }
+    const changed=[];
+    const keys=new Set([...Object.keys(prev),...Object.keys(current)]);
+    for(const k of keys)if(prev[k]!==current[k])changed.push(`${k}: ${prev[k]||'NEW'} → ${current[k]||'MISSING'}`);
+    localStorage.setItem('sd_auto_test_baseline_v2',JSON.stringify(current));
+    return changed.length?{name:'Regression Baseline',status:'warn',detail:`發現 ${changed.length} 個狀態變化：${changed.slice(0,3).join('；')}`}:{name:'Regression Baseline',status:'ok',detail:'與上次 baseline 一致'};
+  }catch(e){
+    return {name:'Regression Baseline',status:'warn',detail:'baseline 儲存失敗，但不影響功能測試'};
+  }
+}
+
+async function runAutoTests(){
+  if(autoTestState.running)return;
+  const total=AUTO_TESTS.length+4;
+  autoTestState={running:true,done:0,total,results:[]};
+  status='自動測試開始：設定、API 合約、翻譯與新聞分區…';
+  render();
+
+  const results=[];
+  const prelim=[testConfigIntegrity(),testApiContract(),testTranslationService()];
+  const prelimResults=await Promise.allSettled(prelim);
+  prelimResults.forEach((r,i)=>{
+    const names=['Config 完整性','API Contract','標題翻譯服務'];
+    results.push(r.status==='fulfilled'?r.value:{name:names[i],status:'bad',detail:String(r.reason?.message||r.reason)});
+  });
+  autoTestState.done=3;
   autoTestState.results=[...results];
   render();
 
-  for(let i=0;i<AUTO_TESTS.length;i++){
-    const x=AUTO_TESTS[i];
-    const section={
-      id:`auto-test-${Date.now()}-${i}`,
-      name:x.name,
-      sport:x.sport,
-      league:x.league,
-      contentTypes:x.contentTypes,
-      hours:x.hours
-    };
-    try{
-      status=`自動測試中：${i+2}/${total} ${x.name}`;
+  // Run news cases with limited concurrency. Results are displayed in fixed case order.
+  const caseResults=new Array(AUTO_TESTS.length);
+  let cursor=0;
+  async function worker(){
+    while(true){
+      const i=cursor++; if(i>=AUTO_TESTS.length)return;
+      const x=AUTO_TESTS[i];
+      const section={id:`auto-test-${Date.now()}-${i}`,name:x.name,sport:x.sport,league:x.league,contentTypes:x.contentTypes,hours:x.hours};
+      try{
+        const d=await fetchNewsBatch([section],AUTO_TEST_TIMEOUT);
+        const returned=Array.isArray(d.items)?d.items:[];
+        const errors=Array.isArray(d.errors)?d.errors:[];
+        const safe=normalizeSection(section);
+        const own=returned.filter(n=>String(n.sectionId||'')===String(safe.id));
+        const mapped=own.length?own:returned.filter(n=>String(n.sport||'')===safe.sport&&(safe.league==='全部'||String(n.league||'')===safe.league));
+        const selected=(safe.contentTypes||[]).filter(t=>t!=='全部');
+        const typed=selected.length?mapped.filter(n=>selected.some(t=>matchesType(n,t))):mapped;
+        const wrongRoute=own.filter(n=>String(n.sport||'')!==safe.sport||(safe.league!=='全部'&&String(n.league||'')!==safe.league));
+        let rowStatus='ok',detail=`${typed.length} 則符合；${errors.length?`來源異常 ${errors.length}`:'來源正常'}`;
+        if(wrongRoute.length){rowStatus='bad';detail=`分區路由錯誤 ${wrongRoute.length} 則`}
+        else if(selected.length&&mapped.length>0&&typed.length!==mapped.length){rowStatus='bad';detail=`內容類型過濾失效：${typed.length}/${mapped.length}`}
+        else if(errors.length&&mapped.length===0){rowStatus='bad';detail=`API 回應但來源全部失敗：${errors.slice(0,2).join('；')}`}
+        else if(mapped.length===0){rowStatus='warn';detail='API 正常但目前沒有符合條件新聞'}
+        else if(errors.length){rowStatus='warn';detail=`${typed.length} 則符合；部分來源異常 ${errors.length}`}
+        caseResults[i]={name:safe.name,status:rowStatus,detail};
+      }catch(e){caseResults[i]={name:x.name,status:'bad',detail:String(e?.message||e)};}
+      autoTestState.done=3+caseResults.filter(Boolean).length;
+      autoTestState.results=[...results,...caseResults.filter(Boolean)];
       render();
-      const d=await fetchNewsBatch([section],AUTO_TEST_TIMEOUT);
-      const returned=Array.isArray(d.items)?d.items:[];
-      const errors=Array.isArray(d.errors)?d.errors:[];
-      const safe=normalizeSection(section);
-      const own=returned.filter(n=>String(n.sectionId||"")===String(safe.id));
-      const mapped=own.length
-        ?own
-        :returned.filter(n=>String(n.sport||"")===safe.sport && (safe.league==="全部" || String(n.league||"")===safe.league));
-      const selected=(safe.contentTypes||[]).filter(x=>x!=="全部");
-      const typed=selected.length?mapped.filter(n=>selected.some(t=>matchesType(n,t))):mapped;
-      const wrongRoute=own.filter(n=>String(n.sport||"")!==safe.sport || (safe.league!=="全部" && String(n.league||"")!==safe.league));
-      const sourceMeta=errors.length?`部分來源異常（${errors.length}）`:"API 正常";
-      let rowStatus="ok",detail=`${typed.length} 則符合條件；${sourceMeta}`;
-      if(wrongRoute.length){
-        rowStatus="bad";detail=`發現 ${wrongRoute.length} 則分區路由錯誤，預期 ${safe.sport}/${safe.league}`;
-      }else if(selected.length && mapped.length>0 && typed.length!==mapped.length){
-        rowStatus="bad";detail=`內容類型過濾失效：${mapped.length} 則中只有 ${typed.length} 則符合 ${selected.join("、")}`;
-      }else if(mapped.length===0){
-        rowStatus=errors.length?"bad":"warn";
-        detail=errors.length?`API 有回應但來源出錯；${sourceMeta}`:`API 有回應，但目前沒有符合條件的新聞`;
-      }else if(errors.length){
-        rowStatus="warn";detail=`${typed.length} 則符合條件；${sourceMeta}`;
-      }
-      results.push({name:safe.name,status:rowStatus,detail});
-    }catch(e){
-      results.push({name:x.name,status:"bad",detail:String(e?.message||e)});
     }
-    autoTestState.done=i+2;
-    autoTestState.results=[...results];
-    render();
   }
-  const bad=results.filter(x=>x.status==="bad").length;
-  const warn=results.filter(x=>x.status==="warn").length;
+  await Promise.all(Array.from({length:Math.min(4,AUTO_TESTS.length)},()=>worker()));
+  results.push(...caseResults);
+  const baseline=autoTestBaselineDiff(results);
+  results.push(baseline);
+  autoTestState.done=total;
+  autoTestState.results=[...results];
+  const bad=results.filter(x=>x.status==='bad').length;
+  const warn=results.filter(x=>x.status==='warn').length;
   autoTestState.running=false;
   status=bad?`自動測試完成：${bad} 個失敗、${warn} 個警告`:`自動測試完成：${results.length-warn} 個通過、${warn} 個警告`;
   render();
@@ -1236,7 +1290,7 @@ function wire(){
 
       render();
 
-      loadNews();
+      loadNews(true);
 
     };
 
@@ -1296,7 +1350,7 @@ function wireEdit(i){
 
     render();
 
-    loadNews();
+    loadNews(true);
 
   };
 
@@ -1421,64 +1475,45 @@ async function fetchNewsBatch(list,timeoutMs=API_TIMEOUT){
   }
 }
 
-async function loadNews(){
-  if(!sections.length){
-    status="請先建立日報分區";
-    render();
-    return;
-  }
-
-  status="正在更新各國／各聯盟新聞…";
+async function loadNews(force=false){
+  if(!sections.length){status='請先建立日報分區';render();return;}
+  status=force?'正在強制更新各國／各聯盟新聞…':'正在載入日報新聞…';
   render();
 
   const previous={...newsBySection};
+  const cacheKey=JSON.stringify(sections.map(apiSection).sort((a,b)=>String(a.id).localeCompare(String(b.id))).map(x=>({sport:x.sport,league:x.league,contentTypes:x.contentTypes,hours:x.hours})));
+  if(!force){
+    try{
+      const raw=JSON.parse(localStorage.getItem('sd_news_api_cache_v2')||'null');
+      if(raw&&raw.key===cacheKey&&Date.now()-Number(raw.time||0)<NEWS_BROWSER_CACHE_TTL&&raw.data){
+        const d=raw.data; const returned=Array.isArray(d.items)?d.items:[]; const next={};
+        for(const s of sections){const safe=normalizeSection(s);const selected=(safe.contentTypes||[]).filter(x=>x!=='全部');next[safe.id]=returned.filter(n=>String(n.sport||'')===String(safe.sport||'')&&(safe.league==='全部'||String(n.league||'')===String(safe.league))&&(!selected.length||selected.some(t=>matchesType(n,t))));}
+        newsBySection=next;lastUpdated=d.fetchedAt||lastUpdated;status=`使用 ${Math.round((Date.now()-raw.time)/1000)} 秒前的新聞快取`;render();return;
+      }
+    }catch(_){/* ignore bad cache */}
+  }
+
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),API_TIMEOUT);
-
   try{
-    const r=await fetch('/api/news',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({sections:sections.map(apiSection)}),
-      signal:controller.signal,
-      cache:'no-store'
-    });
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sections:sections.map(apiSection),forceRefresh:!!force}),signal:controller.signal,cache:'no-store'});
     const d=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(d.error||`HTTP ${r.status}`);
-
-    const returned=Array.isArray(d.items)?d.items:[];
-    const next={};
-
-    for(const s of sections){
-      const safe=normalizeSection(s);
-      const selected=(safe.contentTypes||[]).filter(x=>x&&x!=='全部');
-      next[safe.id]=returned.filter(n=>{
-        if(String(n.sport||'')!==String(safe.sport||''))return false;
-        if(safe.league!=='全部' && String(n.league||'')!==String(safe.league))return false;
-        if(!selected.length)return true;
-        return selected.some(type=>matchesType(n,type));
-      });
-    }
-
-    newsBySection=next;
-    lastUpdated=d.fetchedAt||new Date().toISOString();
-    try{localStorage.setItem('sd_last_updated',lastUpdated);}catch(_){}
-    try{localStorage.setItem('sd_news_cache',JSON.stringify(newsBySection));}catch(_){}
-
+    const returned=Array.isArray(d.items)?d.items:[]; const next={};
+    for(const s of sections){const safe=normalizeSection(s);const selected=(safe.contentTypes||[]).filter(x=>x!=='全部');next[safe.id]=returned.filter(n=>String(n.sport||'')===String(safe.sport||'')&&(safe.league==='全部'||String(n.league||'')===String(safe.league))&&(!selected.length||selected.some(t=>matchesType(n,t))));}
+    newsBySection=next;lastUpdated=d.fetchedAt||new Date().toISOString();
+    try{localStorage.setItem('sd_last_updated',lastUpdated);localStorage.setItem('sd_news_cache',JSON.stringify(newsBySection));localStorage.setItem('sd_news_api_cache_v2',JSON.stringify({key:cacheKey,time:Date.now(),data:d}));}catch(_){ }
     const total=Object.values(next).reduce((sum,v)=>sum+(Array.isArray(v)?v.length:0),0);
-    status=total>0
-      ?`已更新 ${total} 則新聞｜本地媒體＋多語言搜尋`
-      :`目前沒有符合條件的新聞｜搜尋服務暫時沒有回傳結果`;
+    const errorCount=Array.isArray(d.errors)?d.errors.length:0;
+    status=total>0?`已更新 ${total} 則新聞｜${errorCount?`部分來源異常 ${errorCount}`:'多來源正常'}${d.cacheHits?.length&&!force?'｜伺服器快取':' '}`:(errorCount?`目前沒有符合條件的新聞｜部分來源異常 ${errorCount}`:'目前沒有符合條件的新聞｜搜尋服務暫時沒有回傳結果');
   }catch(e){
     newsBySection=previous;
     const cached=Object.values(previous).reduce((sum,v)=>sum+(Array.isArray(v)?v.length:0),0);
     status=cached>0?`新聞來源暫時無法更新，保留上次 ${cached} 則新聞`:'新聞來源暫時無法取得，請稍後再試';
-  }finally{
-    clearTimeout(timer);
-  }
-
+  }finally{clearTimeout(timer);}
   render();
 }
+
 
 document
   .querySelectorAll(".nav")
