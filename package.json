@@ -1,0 +1,12 @@
+{
+  "name": "yundong-xiaoribao",
+  "private": true,
+  "version": "2.0.0",
+  "description": "運動小日報：多來源體育新聞、嚴格聯盟/內容類型篩選、標題翻譯、自動測試與 regression baseline",
+  "scripts": {
+    "audit": "node scripts/audit.mjs",
+    "contract-test": "node scripts/contract-test.mjs",
+    "regression-test": "node scripts/regression-test.mjs",
+    "test": "npm run audit && npm run contract-test && npm run regression-test"
+  }
+}
