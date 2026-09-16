@@ -191,7 +191,7 @@ module.exports=async(req,res)=>{
       translations,
       requested:texts.length,
       translated,
-      version:'title-zh-tw-4'
+      version:'title-zh-tw-5'
     });
   }catch(_){
     return res.status(200).json({
@@ -199,7 +199,7 @@ module.exports=async(req,res)=>{
       translations:[],
       requested:0,
       translated:0,
-      version:'title-zh-tw-4'
+      version:'title-zh-tw-5'
     });
   }
 };
