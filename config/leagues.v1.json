@@ -1,0 +1,155 @@
+{
+  "棒球": [
+    "MLB",
+    "NPB",
+    "KBO",
+    "CPBL",
+    "WBC",
+    "WBSC",
+    "MiLB"
+  ],
+  "籃球": [
+    "NBA",
+    "WNBA",
+    "FIBA",
+    "EuroLeague",
+    "P.LEAGUE+",
+    "T1",
+    "SBL"
+  ],
+  "足球": [
+    "世界盃",
+    "歐冠",
+    "英超",
+    "西甲",
+    "意甲",
+    "德甲",
+    "法甲",
+    "MLS"
+  ],
+  "網球": [
+    "ATP",
+    "WTA",
+    "四大滿貫",
+    "Davis Cup",
+    "Billie Jean King Cup"
+  ],
+  "賽車": [
+    "F1",
+    "MotoGP",
+    "WEC",
+    "NASCAR",
+    "IndyCar",
+    "Formula E",
+    "Formula 2"
+  ],
+  "羽球": [
+    "BWF",
+    "湯姆斯盃",
+    "尤伯盃",
+    "蘇迪曼盃"
+  ],
+  "桌球": [
+    "WTT",
+    "ITTF"
+  ],
+  "排球": [
+    "VNL",
+    "FIVB"
+  ],
+  "冰球": [
+    "NHL",
+    "IIHF"
+  ],
+  "高爾夫": [
+    "PGA",
+    "LPGA",
+    "DP World Tour",
+    "Ryder Cup",
+    "U.S. Open"
+  ],
+  "拳擊": [
+    "WBC Boxing",
+    "WBA",
+    "IBF",
+    "WBO"
+  ],
+  "MMA": [
+    "UFC",
+    "PFL",
+    "ONE Championship",
+    "Bellator"
+  ],
+  "田徑": [
+    "World Athletics",
+    "Diamond League"
+  ],
+  "游泳": [
+    "World Aquatics"
+  ],
+  "體操": [
+    "FIG"
+  ],
+  "自行車": [
+    "UCI",
+    "Tour de France",
+    "Giro d’Italia",
+    "Vuelta a España"
+  ],
+  "電競": [
+    "League of Legends",
+    "LCK",
+    "LPL",
+    "LEC",
+    "LCS",
+    "Valorant",
+    "VCT",
+    "CS2",
+    "BLAST",
+    "ESL",
+    "Dota 2"
+  ],
+  "橄欖球": [
+    "Rugby World Cup",
+    "Six Nations",
+    "The Rugby Championship"
+  ],
+  "美式足球": [
+    "NFL",
+    "NCAA",
+    "Super Bowl"
+  ],
+  "手球": [
+    "IHF",
+    "EHF"
+  ],
+  "曲棍球": [
+    "FIH",
+    "Hockey World Cup"
+  ],
+  "滑雪": [
+    "FIS"
+  ],
+  "射箭": [
+    "World Archery"
+  ],
+  "擊劍": [
+    "FIE"
+  ],
+  "舉重": [
+    "IWF"
+  ],
+  "柔道": [
+    "IJF"
+  ],
+  "跆拳道": [
+    "World Taekwondo"
+  ],
+  "馬術": [
+    "FEI"
+  ],
+  "三鐵": [
+    "World Triathlon",
+    "IRONMAN"
+  ]
+}

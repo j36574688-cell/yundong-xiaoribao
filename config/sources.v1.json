@@ -1,0 +1,1883 @@
+{
+  "COUNTRY": {
+    "US": {
+      "market": "en-US",
+      "domains": [
+        "espn.com",
+        "cbssports.com",
+        "foxsports.com",
+        "nbcsports.com",
+        "sports.yahoo.com",
+        "nba.com",
+        "mlb.com",
+        "nfl.com",
+        "nhl.com"
+      ]
+    },
+    "CA": {
+      "market": "en-CA",
+      "domains": [
+        "tsn.ca",
+        "sportsnet.ca",
+        "cbc.ca"
+      ]
+    },
+    "JP": {
+      "market": "ja-JP",
+      "domains": [
+        "nikkansports.com",
+        "sponichi.co.jp",
+        "hochi.news",
+        "daily.co.jp",
+        "sanspo.com",
+        "nhk.or.jp",
+        "news.yahoo.co.jp",
+        "npb.jp"
+      ]
+    },
+    "KR": {
+      "market": "ko-KR",
+      "domains": [
+        "yna.co.kr",
+        "osen.co.kr",
+        "sports.chosun.com",
+        "sports.donga.com",
+        "sports.khan.co.kr",
+        "koreabaseball.com"
+      ]
+    },
+    "TW": {
+      "market": "zh-TW",
+      "domains": [
+        "cna.com.tw",
+        "ltn.com.tw",
+        "udn.com",
+        "ettoday.net",
+        "tsna.com.tw",
+        "cpbl.com.tw"
+      ]
+    },
+    "GB": {
+      "market": "en-GB",
+      "domains": [
+        "bbc.com",
+        "skysports.com",
+        "theguardian.com"
+      ]
+    },
+    "ES": {
+      "market": "es-ES",
+      "domains": [
+        "marca.com",
+        "as.com",
+        "mundodeportivo.com",
+        "sport.es",
+        "relevo.com"
+      ]
+    },
+    "IT": {
+      "market": "it-IT",
+      "domains": [
+        "gazzetta.it",
+        "corrieredellosport.it",
+        "tuttosport.com",
+        "sport.sky.it",
+        "eurosport.it"
+      ]
+    },
+    "DE": {
+      "market": "de-DE",
+      "domains": [
+        "kicker.de",
+        "sportschau.de",
+        "sport1.de",
+        "ran.de",
+        "bild.de"
+      ]
+    },
+    "FR": {
+      "market": "fr-FR",
+      "domains": [
+        "lequipe.fr",
+        "rmcsport.bfmtv.com",
+        "eurosport.fr",
+        "footmercato.net"
+      ]
+    },
+    "BR": {
+      "market": "pt-BR",
+      "domains": [
+        "ge.globo.com",
+        "uol.com.br",
+        "lance.com.br",
+        "gazetaesportiva.com"
+      ]
+    },
+    "MX": {
+      "market": "es-MX",
+      "domains": [
+        "record.com.mx",
+        "mediotiempo.com",
+        "tudn.com"
+      ]
+    },
+    "AR": {
+      "market": "es-AR",
+      "domains": [
+        "ole.com.ar",
+        "tycsports.com"
+      ]
+    },
+    "PT": {
+      "market": "pt-PT",
+      "domains": [
+        "abola.pt",
+        "record.pt",
+        "ojogo.pt"
+      ]
+    },
+    "NL": {
+      "market": "nl-NL",
+      "domains": [
+        "nos.nl",
+        "vi.nl",
+        "ad.nl",
+        "voetbalprimeur.nl"
+      ]
+    },
+    "BE": {
+      "market": "nl-BE",
+      "domains": [
+        "sporza.be",
+        "rtbf.be",
+        "vrt.be"
+      ]
+    },
+    "TR": {
+      "market": "tr-TR",
+      "domains": [
+        "trtspor.com.tr",
+        "fanatik.com.tr",
+        "ntvspor.net"
+      ]
+    },
+    "AU": {
+      "market": "en-AU",
+      "domains": [
+        "abc.net.au",
+        "foxsports.com.au",
+        "sen.com.au"
+      ]
+    },
+    "NZ": {
+      "market": "en-NZ",
+      "domains": [
+        "stuff.co.nz",
+        "nzherald.co.nz"
+      ]
+    },
+    "ZA": {
+      "market": "en-ZA",
+      "domains": [
+        "supersport.com",
+        "sport24.co.za"
+      ]
+    },
+    "IN": {
+      "market": "en-IN",
+      "domains": [
+        "sportstar.thehindu.com",
+        "hindustantimes.com"
+      ]
+    },
+    "CN": {
+      "market": "zh-CN",
+      "domains": [
+        "wanplus.cn",
+        "news.17173.com",
+        "esports.sina.com.cn",
+        "sports.sina.com.cn",
+        "sports.qq.com",
+        "egame.qq.com",
+        "games.sohu.com",
+        "game.163.com",
+        "game.gtimg.cn",
+        "lol.qq.com",
+        "v5game.gtimg.cn",
+        "news.3dmgame.com",
+        "news.ali213.net",
+        "game.people.com.cn"
+      ]
+    },
+    "PL": {
+      "market": "pl-PL",
+      "domains": [
+        "sport.pl",
+        "sportowefakty.wp.pl"
+      ]
+    },
+    "CZ": {
+      "market": "cs-CZ",
+      "domains": [
+        "sport.cz",
+        "isport.blesk.cz"
+      ]
+    },
+    "GR": {
+      "market": "el-GR",
+      "domains": [
+        "sport24.gr",
+        "gazzetta.gr",
+        "novasports.gr"
+      ]
+    },
+    "AT": {
+      "market": "de-AT",
+      "domains": [
+        "laola1.at",
+        "kurier.at"
+      ]
+    },
+    "CH": {
+      "market": "de-CH",
+      "domains": [
+        "srf.ch",
+        "20min.ch"
+      ]
+    },
+    "SE": {
+      "market": "sv-SE",
+      "domains": [
+        "svt.se",
+        "aftonbladet.se",
+        "expressen.se"
+      ]
+    },
+    "NO": {
+      "market": "nb-NO",
+      "domains": [
+        "nrk.no",
+        "tv2.no",
+        "vg.no"
+      ]
+    },
+    "DK": {
+      "market": "da-DK",
+      "domains": [
+        "dr.dk",
+        "tv2.dk",
+        "bold.dk"
+      ]
+    },
+    "FI": {
+      "market": "fi-FI",
+      "domains": [
+        "yle.fi",
+        "mtvuutiset.fi",
+        "iltalehti.fi"
+      ]
+    },
+    "ID": {
+      "market": "id-ID",
+      "domains": [
+        "kompas.com",
+        "detik.com",
+        "bola.net"
+      ]
+    },
+    "MY": {
+      "market": "ms-MY",
+      "domains": [
+        "thestar.com.my",
+        "malaymail.com",
+        "bharian.com.my"
+      ]
+    },
+    "TH": {
+      "market": "th-TH",
+      "domains": [
+        "thairath.co.th",
+        "siamsport.co.th"
+      ]
+    },
+    "SG": {
+      "market": "en-SG",
+      "domains": [
+        "straitstimes.com",
+        "channelnewsasia.com"
+      ]
+    },
+    "IE": {
+      "market": "en-IE",
+      "domains": [
+        "rte.ie",
+        "irishtimes.com"
+      ]
+    },
+    "HU": {
+      "market": "hu-HU",
+      "domains": [
+        "nemzetisport.hu",
+        "nso.hu"
+      ]
+    }
+  },
+  "LEAGUE": {
+    "MLB": [
+      "MLB",
+      "Major League Baseball"
+    ],
+    "NPB": [
+      "NPB",
+      "Nippon Professional Baseball",
+      "日本プロ野球",
+      "日本職棒"
+    ],
+    "KBO": [
+      "KBO",
+      "Korea Baseball Organization",
+      "KBO리그",
+      "한국프로야구",
+      "韓國職棒"
+    ],
+    "CPBL": [
+      "CPBL",
+      "Chinese Professional Baseball League",
+      "中華職棒",
+      "中職"
+    ],
+    "WBC": [
+      "World Baseball Classic",
+      "WBC",
+      "世界棒球經典賽"
+    ],
+    "WBSC": [
+      "WBSC",
+      "World Baseball Softball Confederation"
+    ],
+    "MiLB": [
+      "MiLB",
+      "Minor League Baseball"
+    ],
+    "NBA": [
+      "NBA",
+      "National Basketball Association"
+    ],
+    "WNBA": [
+      "WNBA",
+      "Women's National Basketball Association"
+    ],
+    "FIBA": [
+      "FIBA",
+      "International Basketball Federation"
+    ],
+    "EuroLeague": [
+      "EuroLeague"
+    ],
+    "P.LEAGUE+": [
+      "P.LEAGUE+",
+      "P+ LEAGUE"
+    ],
+    "T1": [
+      "T1 League",
+      "T1 basketball"
+    ],
+    "SBL": [
+      "Super Basketball League",
+      "SBL"
+    ],
+    "世界盃": [
+      "FIFA World Cup",
+      "World Cup",
+      "世界盃"
+    ],
+    "歐冠": [
+      "UEFA Champions League",
+      "Champions League",
+      "歐冠"
+    ],
+    "英超": [
+      "Premier League",
+      "English Premier League",
+      "英超"
+    ],
+    "西甲": [
+      "La Liga",
+      "Spanish La Liga",
+      "西甲"
+    ],
+    "意甲": [
+      "Serie A",
+      "Italian Serie A",
+      "意甲"
+    ],
+    "德甲": [
+      "Bundesliga",
+      "German Bundesliga",
+      "德甲"
+    ],
+    "法甲": [
+      "Ligue 1",
+      "French Ligue 1",
+      "法甲"
+    ],
+    "MLS": [
+      "Major League Soccer",
+      "MLS"
+    ],
+    "ATP": [
+      "ATP",
+      "ATP Tour"
+    ],
+    "WTA": [
+      "WTA",
+      "WTA Tour"
+    ],
+    "四大滿貫": [
+      "Grand Slam",
+      "Wimbledon",
+      "US Open",
+      "French Open",
+      "Roland Garros",
+      "Australian Open"
+    ],
+    "Davis Cup": [
+      "Davis Cup"
+    ],
+    "Billie Jean King Cup": [
+      "Billie Jean King Cup"
+    ],
+    "F1": [
+      "Formula 1",
+      "Formula One",
+      "F1"
+    ],
+    "MotoGP": [
+      "MotoGP"
+    ],
+    "WEC": [
+      "World Endurance Championship",
+      "WEC"
+    ],
+    "NASCAR": [
+      "NASCAR"
+    ],
+    "IndyCar": [
+      "IndyCar"
+    ],
+    "Formula E": [
+      "Formula E"
+    ],
+    "Formula 2": [
+      "Formula 2",
+      "F2"
+    ],
+    "BWF": [
+      "BWF",
+      "Badminton World Federation"
+    ],
+    "湯姆斯盃": [
+      "Thomas Cup",
+      "湯姆斯盃"
+    ],
+    "尤伯盃": [
+      "Uber Cup",
+      "尤伯盃"
+    ],
+    "蘇迪曼盃": [
+      "Sudirman Cup",
+      "蘇迪曼盃"
+    ],
+    "WTT": [
+      "WTT",
+      "World Table Tennis"
+    ],
+    "ITTF": [
+      "ITTF",
+      "International Table Tennis Federation"
+    ],
+    "VNL": [
+      "Volleyball Nations League",
+      "VNL"
+    ],
+    "FIVB": [
+      "FIVB",
+      "International Volleyball Federation"
+    ],
+    "NHL": [
+      "NHL",
+      "National Hockey League"
+    ],
+    "IIHF": [
+      "IIHF",
+      "International Ice Hockey Federation"
+    ],
+    "PGA": [
+      "PGA Tour",
+      "PGA"
+    ],
+    "LPGA": [
+      "LPGA Tour",
+      "LPGA"
+    ],
+    "DP World Tour": [
+      "DP World Tour",
+      "European Tour"
+    ],
+    "Ryder Cup": [
+      "Ryder Cup"
+    ],
+    "U.S. Open": [
+      "U.S. Open"
+    ],
+    "WBC Boxing": [
+      "World Boxing Council",
+      "WBC Boxing"
+    ],
+    "WBA": [
+      "World Boxing Association",
+      "WBA"
+    ],
+    "IBF": [
+      "International Boxing Federation",
+      "IBF"
+    ],
+    "WBO": [
+      "World Boxing Organization",
+      "WBO"
+    ],
+    "UFC": [
+      "UFC",
+      "Ultimate Fighting Championship"
+    ],
+    "PFL": [
+      "PFL",
+      "Professional Fighters League"
+    ],
+    "ONE Championship": [
+      "ONE Championship",
+      "ONE Fight Night"
+    ],
+    "Bellator": [
+      "Bellator"
+    ],
+    "World Athletics": [
+      "World Athletics"
+    ],
+    "Diamond League": [
+      "Diamond League"
+    ],
+    "World Aquatics": [
+      "World Aquatics"
+    ],
+    "FIG": [
+      "FIG",
+      "International Gymnastics Federation"
+    ],
+    "UCI": [
+      "UCI",
+      "Union Cycliste Internationale"
+    ],
+    "Tour de France": [
+      "Tour de France"
+    ],
+    "Giro d’Italia": [
+      "Giro d’Italia",
+      "Giro d'Italia"
+    ],
+    "Vuelta a España": [
+      "Vuelta a España",
+      "Vuelta a Espana"
+    ],
+    "League of Legends": [
+      "League of Legends",
+      "LoL",
+      "英雄联盟"
+    ],
+    "LCK": [
+      "LCK",
+      "League of Legends Champions Korea"
+    ],
+    "LPL": [
+      "LPL",
+      "League of Legends Pro League",
+      "英雄联盟职业联赛",
+      "英雄联盟LPL"
+    ],
+    "LEC": [
+      "LEC",
+      "League of Legends EMEA Championship"
+    ],
+    "LCS": [
+      "LCS",
+      "League of Legends Championship Series"
+    ],
+    "Valorant": [
+      "Valorant",
+      "VALORANT",
+      "無畏契約"
+    ],
+    "VCT": [
+      "Valorant Champions Tour",
+      "VCT",
+      "VCT CN",
+      "无畏契约冠军巡回赛"
+    ],
+    "CS2": [
+      "Counter-Strike 2",
+      "CS2",
+      "反恐精英2",
+      "CSGO"
+    ],
+    "BLAST": [
+      "BLAST Premier",
+      "BLAST"
+    ],
+    "ESL": [
+      "ESL",
+      "ESL Pro League"
+    ],
+    "Dota 2": [
+      "Dota 2",
+      "Dota2",
+      "刀塔2",
+      "DOTA2"
+    ],
+    "Rugby World Cup": [
+      "Rugby World Cup"
+    ],
+    "Six Nations": [
+      "Six Nations"
+    ],
+    "The Rugby Championship": [
+      "The Rugby Championship"
+    ],
+    "NFL": [
+      "NFL",
+      "National Football League"
+    ],
+    "NCAA": [
+      "NCAA",
+      "College Football",
+      "NCAA Football"
+    ],
+    "Super Bowl": [
+      "Super Bowl"
+    ],
+    "IHF": [
+      "IHF",
+      "International Handball Federation"
+    ],
+    "EHF": [
+      "EHF",
+      "European Handball Federation"
+    ],
+    "FIH": [
+      "FIH",
+      "International Hockey Federation"
+    ],
+    "Hockey World Cup": [
+      "Hockey World Cup"
+    ],
+    "FIS": [
+      "FIS",
+      "International Ski Federation"
+    ],
+    "World Archery": [
+      "World Archery"
+    ],
+    "FIE": [
+      "FIE",
+      "International Fencing Federation"
+    ],
+    "IWF": [
+      "IWF",
+      "International Weightlifting Federation"
+    ],
+    "IJF": [
+      "IJF",
+      "International Judo Federation"
+    ],
+    "World Taekwondo": [
+      "World Taekwondo"
+    ],
+    "FEI": [
+      "FEI",
+      "Fédération Equestre Internationale"
+    ],
+    "World Triathlon": [
+      "World Triathlon"
+    ],
+    "IRONMAN": [
+      "IRONMAN"
+    ]
+  },
+  "PACK": {
+    "MLB": [
+      "US",
+      "CA"
+    ],
+    "NPB": [
+      "JP"
+    ],
+    "KBO": [
+      "KR"
+    ],
+    "CPBL": [
+      "TW"
+    ],
+    "WBC": [
+      "US",
+      "JP",
+      "KR",
+      "TW"
+    ],
+    "WBSC": [
+      "JP",
+      "US",
+      "TW",
+      "KR"
+    ],
+    "MiLB": [
+      "US"
+    ],
+    "NBA": [
+      "US",
+      "CA"
+    ],
+    "WNBA": [
+      "US",
+      "CA"
+    ],
+    "FIBA": [
+      "ES",
+      "FR",
+      "IT",
+      "DE"
+    ],
+    "EuroLeague": [
+      "ES",
+      "GR",
+      "IT",
+      "TR"
+    ],
+    "P.LEAGUE+": [
+      "TW"
+    ],
+    "T1": [
+      "TW"
+    ],
+    "SBL": [
+      "TW"
+    ],
+    "世界盃": [
+      "GB",
+      "ES",
+      "FR",
+      "DE"
+    ],
+    "歐冠": [
+      "GB",
+      "ES",
+      "FR",
+      "DE"
+    ],
+    "英超": [
+      "GB"
+    ],
+    "西甲": [
+      "ES"
+    ],
+    "意甲": [
+      "IT"
+    ],
+    "德甲": [
+      "DE"
+    ],
+    "法甲": [
+      "FR"
+    ],
+    "MLS": [
+      "US",
+      "CA"
+    ],
+    "ATP": [
+      "US",
+      "GB",
+      "FR",
+      "ES"
+    ],
+    "WTA": [
+      "US",
+      "GB",
+      "FR",
+      "ES"
+    ],
+    "四大滿貫": [
+      "AU",
+      "GB",
+      "FR",
+      "US"
+    ],
+    "Davis Cup": [
+      "GB",
+      "FR",
+      "ES",
+      "US"
+    ],
+    "Billie Jean King Cup": [
+      "GB",
+      "FR",
+      "ES",
+      "US"
+    ],
+    "F1": [
+      "GB",
+      "IT",
+      "ES",
+      "FR"
+    ],
+    "MotoGP": [
+      "IT",
+      "ES",
+      "FR"
+    ],
+    "WEC": [
+      "FR",
+      "GB",
+      "DE",
+      "IT"
+    ],
+    "NASCAR": [
+      "US"
+    ],
+    "IndyCar": [
+      "US"
+    ],
+    "Formula E": [
+      "GB",
+      "DE",
+      "FR"
+    ],
+    "Formula 2": [
+      "GB",
+      "IT"
+    ],
+    "BWF": [
+      "MY",
+      "ID",
+      "JP",
+      "KR"
+    ],
+    "湯姆斯盃": [
+      "ID",
+      "MY",
+      "CN",
+      "JP"
+    ],
+    "尤伯盃": [
+      "CN",
+      "JP",
+      "KR",
+      "ID"
+    ],
+    "蘇迪曼盃": [
+      "CN",
+      "JP",
+      "KR",
+      "ID"
+    ],
+    "WTT": [
+      "CN",
+      "JP",
+      "KR",
+      "DE"
+    ],
+    "ITTF": [
+      "CN",
+      "JP",
+      "KR",
+      "DE"
+    ],
+    "VNL": [
+      "IT",
+      "BR",
+      "PL",
+      "JP"
+    ],
+    "FIVB": [
+      "IT",
+      "BR",
+      "PL",
+      "JP"
+    ],
+    "NHL": [
+      "CA",
+      "US",
+      "SE",
+      "FI"
+    ],
+    "IIHF": [
+      "CA",
+      "US",
+      "SE",
+      "FI"
+    ],
+    "PGA": [
+      "US",
+      "GB"
+    ],
+    "LPGA": [
+      "US",
+      "JP"
+    ],
+    "DP World Tour": [
+      "GB",
+      "ES",
+      "DE",
+      "FR"
+    ],
+    "Ryder Cup": [
+      "US",
+      "GB",
+      "ES",
+      "FR"
+    ],
+    "U.S. Open": [
+      "US"
+    ],
+    "WBC Boxing": [
+      "US",
+      "MX",
+      "GB"
+    ],
+    "WBA": [
+      "US",
+      "MX",
+      "GB"
+    ],
+    "IBF": [
+      "US",
+      "GB",
+      "MX"
+    ],
+    "WBO": [
+      "US",
+      "GB",
+      "MX"
+    ],
+    "UFC": [
+      "US",
+      "GB",
+      "BR"
+    ],
+    "PFL": [
+      "US",
+      "GB"
+    ],
+    "ONE Championship": [
+      "TH",
+      "SG",
+      "JP"
+    ],
+    "Bellator": [
+      "US",
+      "GB"
+    ],
+    "World Athletics": [
+      "US",
+      "GB",
+      "FR",
+      "DE"
+    ],
+    "Diamond League": [
+      "GB",
+      "FR",
+      "DE",
+      "IT"
+    ],
+    "World Aquatics": [
+      "US",
+      "AU",
+      "GB",
+      "JP"
+    ],
+    "FIG": [
+      "US",
+      "JP",
+      "GB",
+      "FR"
+    ],
+    "UCI": [
+      "FR",
+      "IT",
+      "ES",
+      "BE"
+    ],
+    "Tour de France": [
+      "FR",
+      "BE",
+      "NL",
+      "GB"
+    ],
+    "Giro d’Italia": [
+      "IT",
+      "FR",
+      "BE",
+      "NL"
+    ],
+    "Vuelta a España": [
+      "ES",
+      "FR",
+      "IT"
+    ],
+    "League of Legends": [
+      "CN",
+      "KR",
+      "US",
+      "DE"
+    ],
+    "LCK": [
+      "KR"
+    ],
+    "LPL": [
+      "CN",
+      "KR"
+    ],
+    "LEC": [
+      "DE",
+      "FR",
+      "ES",
+      "GB"
+    ],
+    "LCS": [
+      "US",
+      "CA"
+    ],
+    "Valorant": [
+      "CN",
+      "KR",
+      "US",
+      "BR",
+      "DE"
+    ],
+    "VCT": [
+      "CN",
+      "KR",
+      "US",
+      "BR",
+      "DE"
+    ],
+    "CS2": [
+      "CN",
+      "DE",
+      "GB",
+      "US",
+      "FR"
+    ],
+    "BLAST": [
+      "CN",
+      "DK",
+      "GB",
+      "DE",
+      "FR"
+    ],
+    "ESL": [
+      "CN",
+      "DE",
+      "GB",
+      "US",
+      "FR"
+    ],
+    "Dota 2": [
+      "CN",
+      "US",
+      "DE",
+      "SE"
+    ],
+    "Rugby World Cup": [
+      "GB",
+      "FR",
+      "NZ",
+      "AU"
+    ],
+    "Six Nations": [
+      "GB",
+      "FR",
+      "IE"
+    ],
+    "The Rugby Championship": [
+      "NZ",
+      "AU",
+      "ZA",
+      "AR"
+    ],
+    "NFL": [
+      "US",
+      "CA"
+    ],
+    "NCAA": [
+      "US"
+    ],
+    "Super Bowl": [
+      "US",
+      "CA"
+    ],
+    "IHF": [
+      "DE",
+      "FR",
+      "ES",
+      "DK"
+    ],
+    "EHF": [
+      "DE",
+      "FR",
+      "ES",
+      "DK"
+    ],
+    "FIH": [
+      "NL",
+      "IN",
+      "DE",
+      "BE"
+    ],
+    "Hockey World Cup": [
+      "NL",
+      "IN",
+      "DE",
+      "BE"
+    ],
+    "FIS": [
+      "AT",
+      "CH",
+      "NO",
+      "SE"
+    ],
+    "World Archery": [
+      "KR",
+      "CN",
+      "US",
+      "FR"
+    ],
+    "FIE": [
+      "FR",
+      "IT",
+      "HU",
+      "US"
+    ],
+    "IWF": [
+      "CN",
+      "US",
+      "DE",
+      "GB"
+    ],
+    "IJF": [
+      "JP",
+      "FR",
+      "BR"
+    ],
+    "World Taekwondo": [
+      "KR",
+      "US",
+      "FR",
+      "GB"
+    ],
+    "FEI": [
+      "GB",
+      "DE",
+      "FR",
+      "US"
+    ],
+    "World Triathlon": [
+      "GB",
+      "US",
+      "AU",
+      "ES"
+    ],
+    "IRONMAN": [
+      "US",
+      "AU",
+      "GB",
+      "ES"
+    ]
+  },
+  "SPORT_COUNTRIES": {
+    "棒球": [
+      "JP",
+      "US",
+      "KR",
+      "TW"
+    ],
+    "籃球": [
+      "US",
+      "CA",
+      "ES",
+      "FR"
+    ],
+    "足球": [
+      "GB",
+      "ES",
+      "IT",
+      "DE",
+      "FR",
+      "BR"
+    ],
+    "網球": [
+      "US",
+      "GB",
+      "FR",
+      "ES"
+    ],
+    "賽車": [
+      "GB",
+      "IT",
+      "ES",
+      "FR"
+    ],
+    "羽球": [
+      "MY",
+      "ID",
+      "JP",
+      "KR"
+    ],
+    "桌球": [
+      "CN",
+      "JP",
+      "KR",
+      "DE"
+    ],
+    "排球": [
+      "IT",
+      "BR",
+      "PL",
+      "JP"
+    ],
+    "冰球": [
+      "CA",
+      "US",
+      "SE",
+      "FI"
+    ],
+    "高爾夫": [
+      "US",
+      "GB",
+      "JP",
+      "AU"
+    ],
+    "拳擊": [
+      "US",
+      "GB",
+      "MX",
+      "BR"
+    ],
+    "MMA": [
+      "US",
+      "GB",
+      "BR"
+    ],
+    "田徑": [
+      "US",
+      "GB",
+      "FR",
+      "DE"
+    ],
+    "游泳": [
+      "US",
+      "AU",
+      "GB",
+      "JP"
+    ],
+    "體操": [
+      "US",
+      "JP",
+      "GB",
+      "FR"
+    ],
+    "自行車": [
+      "FR",
+      "IT",
+      "ES",
+      "BE"
+    ],
+    "電競": [
+      "KR",
+      "CN",
+      "US",
+      "DE"
+    ],
+    "橄欖球": [
+      "GB",
+      "FR",
+      "NZ",
+      "AU"
+    ],
+    "美式足球": [
+      "US",
+      "CA"
+    ],
+    "手球": [
+      "DE",
+      "FR",
+      "ES",
+      "DK"
+    ],
+    "曲棍球": [
+      "NL",
+      "IN",
+      "DE",
+      "BE"
+    ],
+    "滑雪": [
+      "AT",
+      "CH",
+      "NO",
+      "SE"
+    ],
+    "射箭": [
+      "KR",
+      "CN",
+      "US",
+      "FR"
+    ],
+    "擊劍": [
+      "FR",
+      "IT",
+      "HU",
+      "US"
+    ],
+    "舉重": [
+      "CN",
+      "US",
+      "DE",
+      "GB"
+    ],
+    "柔道": [
+      "JP",
+      "FR",
+      "BR"
+    ],
+    "跆拳道": [
+      "KR",
+      "US",
+      "FR",
+      "GB"
+    ],
+    "馬術": [
+      "GB",
+      "DE",
+      "FR",
+      "US"
+    ],
+    "三鐵": [
+      "GB",
+      "US",
+      "AU",
+      "ES"
+    ]
+  },
+  "SPORT_LEAGUES": {
+    "棒球": [
+      "MLB",
+      "NPB",
+      "KBO",
+      "CPBL",
+      "WBC",
+      "WBSC",
+      "MiLB"
+    ],
+    "籃球": [
+      "NBA",
+      "WNBA",
+      "FIBA",
+      "EuroLeague",
+      "P.LEAGUE+",
+      "T1",
+      "SBL"
+    ],
+    "足球": [
+      "世界盃",
+      "歐冠",
+      "英超",
+      "西甲",
+      "意甲",
+      "德甲",
+      "法甲",
+      "MLS"
+    ],
+    "網球": [
+      "ATP",
+      "WTA",
+      "四大滿貫",
+      "Davis Cup",
+      "Billie Jean King Cup"
+    ],
+    "賽車": [
+      "F1",
+      "MotoGP",
+      "WEC",
+      "NASCAR",
+      "IndyCar",
+      "Formula E",
+      "Formula 2"
+    ],
+    "羽球": [
+      "BWF",
+      "湯姆斯盃",
+      "尤伯盃",
+      "蘇迪曼盃"
+    ],
+    "桌球": [
+      "WTT",
+      "ITTF"
+    ],
+    "排球": [
+      "VNL",
+      "FIVB"
+    ],
+    "冰球": [
+      "NHL",
+      "IIHF"
+    ],
+    "高爾夫": [
+      "PGA",
+      "LPGA",
+      "DP World Tour",
+      "Ryder Cup",
+      "U.S. Open"
+    ],
+    "拳擊": [
+      "WBC Boxing",
+      "WBA",
+      "IBF",
+      "WBO"
+    ],
+    "MMA": [
+      "UFC",
+      "PFL",
+      "ONE Championship",
+      "Bellator"
+    ],
+    "田徑": [
+      "World Athletics",
+      "Diamond League"
+    ],
+    "游泳": [
+      "World Aquatics"
+    ],
+    "體操": [
+      "FIG"
+    ],
+    "自行車": [
+      "UCI",
+      "Tour de France",
+      "Giro d’Italia",
+      "Vuelta a España"
+    ],
+    "電競": [
+      "League of Legends",
+      "LCK",
+      "LPL",
+      "LEC",
+      "LCS",
+      "Valorant",
+      "VCT",
+      "CS2",
+      "BLAST",
+      "ESL",
+      "Dota 2"
+    ],
+    "橄欖球": [
+      "Rugby World Cup",
+      "Six Nations",
+      "The Rugby Championship"
+    ],
+    "美式足球": [
+      "NFL",
+      "NCAA",
+      "Super Bowl"
+    ],
+    "手球": [
+      "IHF",
+      "EHF"
+    ],
+    "曲棍球": [
+      "FIH",
+      "Hockey World Cup"
+    ],
+    "滑雪": [
+      "FIS"
+    ],
+    "射箭": [
+      "World Archery"
+    ],
+    "擊劍": [
+      "FIE"
+    ],
+    "舉重": [
+      "IWF"
+    ],
+    "柔道": [
+      "IJF"
+    ],
+    "跆拳道": [
+      "World Taekwondo"
+    ],
+    "馬術": [
+      "FEI"
+    ],
+    "三鐵": [
+      "World Triathlon",
+      "IRONMAN"
+    ]
+  },
+  "ESPORTS_SITES": {
+    "League of Legends": [
+      "lolesports.com",
+      "wanplus.cn",
+      "news.17173.com",
+      "invenglobal.com",
+      "sheepesports.com",
+      "dotesports.com",
+      "esportsinsider.com",
+      "dexerto.com",
+      "dailyesports.com"
+    ],
+    "LCK": [
+      "lolesports.com",
+      "invenglobal.com",
+      "dailyesports.com",
+      "fomos.kr",
+      "inven.co.kr",
+      "sheepesports.com",
+      "dexerto.com"
+    ],
+    "LPL": [
+      "lolesports.com",
+      "wanplus.cn",
+      "news.17173.com",
+      "esports.sina.com.cn",
+      "invenglobal.com",
+      "dotesports.com",
+      "esportsinsider.com",
+      "dexerto.com",
+      "sheepesports.com"
+    ],
+    "LEC": [
+      "lolesports.com",
+      "sheepesports.com",
+      "dotesports.com",
+      "esportsinsider.com",
+      "dexerto.com",
+      "esports.gg",
+      "invenglobal.com"
+    ],
+    "LCS": [
+      "lolesports.com",
+      "sheepesports.com",
+      "dotesports.com",
+      "esports.gg",
+      "esportsinsider.com",
+      "dexerto.com",
+      "invenglobal.com"
+    ],
+    "Valorant": [
+      "valorantesports.com",
+      "vlr.gg",
+      "thespike.gg",
+      "news.17173.com",
+      "wanplus.cn",
+      "esports.gg",
+      "dotesports.com",
+      "esportsinsider.com",
+      "sheepesports.com",
+      "dexerto.com"
+    ],
+    "VCT": [
+      "valorantesports.com",
+      "vlr.gg",
+      "thespike.gg",
+      "news.17173.com",
+      "wanplus.cn",
+      "esports.gg",
+      "dotesports.com",
+      "esportsinsider.com",
+      "sheepesports.com",
+      "dexerto.com"
+    ],
+    "CS2": [
+      "hltv.org",
+      "news.17173.com",
+      "wanplus.cn",
+      "dust2.us",
+      "blast.tv",
+      "esl.com",
+      "esports.gg",
+      "dotesports.com",
+      "esportsinsider.com",
+      "escorenews.com"
+    ],
+    "BLAST": [
+      "blast.tv",
+      "hltv.org",
+      "news.17173.com",
+      "wanplus.cn",
+      "dust2.us",
+      "esl.com",
+      "esports.gg",
+      "dotesports.com",
+      "escorenews.com"
+    ],
+    "ESL": [
+      "esl.com",
+      "hltv.org",
+      "news.17173.com",
+      "wanplus.cn",
+      "dust2.us",
+      "esports.gg",
+      "dotesports.com",
+      "esportsinsider.com",
+      "escorenews.com"
+    ],
+    "Dota 2": [
+      "dota2.com",
+      "gosugamers.net",
+      "news.17173.com",
+      "wanplus.cn",
+      "escorenews.com",
+      "dotesports.com",
+      "esportsinsider.com",
+      "esports.gg",
+      "liquipedia.net"
+    ]
+  },
+  "ESPORTS_RULES": {
+    "League of Legends": {
+      "required": [
+        "league of legends",
+        "lol esports",
+        "lolesports",
+        "lol"
+      ],
+      "competitive": [
+        "lck",
+        "lpl",
+        "lec",
+        "lcs",
+        "worlds",
+        "msi",
+        "playoff",
+        "final",
+        "tournament",
+        "esports",
+        "roster",
+        "team",
+        "player"
+      ]
+    },
+    "LCK": {
+      "required": [
+        "lck",
+        "league of legends champions korea",
+        "한국프로",
+        "한국 리그오브레전드",
+        "롤"
+      ],
+      "competitive": [
+        "lck",
+        "playoff",
+        "final",
+        "roster",
+        "team",
+        "player",
+        "coach",
+        "league of legends"
+      ]
+    },
+    "LPL": {
+      "required": [
+        "lpl",
+        "league of legends pro league",
+        "china league of legends",
+        "英雄联盟",
+        "中國英雄聯盟"
+      ],
+      "competitive": [
+        "lpl",
+        "playoff",
+        "final",
+        "roster",
+        "team",
+        "player",
+        "coach",
+        "league of legends"
+      ]
+    },
+    "LEC": {
+      "required": [
+        "lec",
+        "league of legends emea championship",
+        "league of legends",
+        "emea"
+      ],
+      "competitive": [
+        "lec",
+        "playoff",
+        "final",
+        "roster",
+        "team",
+        "player",
+        "coach",
+        "league of legends"
+      ]
+    },
+    "LCS": {
+      "required": [
+        "lcs",
+        "league of legends championship series",
+        "league of legends",
+        "nacl",
+        "north america"
+      ],
+      "competitive": [
+        "lcs",
+        "playoff",
+        "final",
+        "roster",
+        "team",
+        "player",
+        "coach",
+        "league of legends"
+      ]
+    },
+    "Valorant": {
+      "required": [
+        "valorant",
+        "valorant esports",
+        "valorant champions",
+        "vct",
+        "game changers",
+        "challengers"
+      ],
+      "competitive": [
+        "valorant",
+        "vct",
+        "champions",
+        "game changers",
+        "challengers",
+        "roster",
+        "team",
+        "player",
+        "tournament"
+      ]
+    },
+    "VCT": {
+      "required": [
+        "vct",
+        "valorant champions tour",
+        "valorant",
+        "valorant esports"
+      ],
+      "competitive": [
+        "vct",
+        "valorant",
+        "champions",
+        "masters",
+        "kickoff",
+        "stage",
+        "playoff",
+        "roster",
+        "team",
+        "player"
+      ]
+    },
+    "CS2": {
+      "required": [
+        "counter-strike 2",
+        "counter strike 2",
+        "cs2",
+        "counter-strike",
+        "counter strike",
+        "iem",
+        "major"
+      ],
+      "competitive": [
+        "cs2",
+        "counter-strike",
+        "major",
+        "iem",
+        "blast",
+        "esl",
+        "pgl",
+        "roster",
+        "team",
+        "player",
+        "tournament"
+      ]
+    },
+    "BLAST": {
+      "required": [
+        "blast",
+        "blast premier",
+        "blast open",
+        "blast bounty",
+        "counter-strike",
+        "cs2"
+      ],
+      "competitive": [
+        "blast",
+        "cs2",
+        "counter-strike",
+        "premier",
+        "open",
+        "bounty",
+        "roster",
+        "team",
+        "player",
+        "tournament"
+      ]
+    },
+    "ESL": {
+      "required": [
+        "esl",
+        "esl pro league",
+        "counter-strike",
+        "cs2"
+      ],
+      "competitive": [
+        "esl",
+        "cs2",
+        "counter-strike",
+        "pro league",
+        "challenger",
+        "roster",
+        "team",
+        "player",
+        "tournament"
+      ]
+    },
+    "Dota 2": {
+      "required": [
+        "dota 2",
+        "dota2",
+        "the international",
+        "ti 2026",
+        "pgl",
+        "esl one",
+        "dreamleague"
+      ],
+      "competitive": [
+        "dota 2",
+        "dota2",
+        "the international",
+        "ti",
+        "pgl",
+        "esl one",
+        "dreamleague",
+        "roster",
+        "team",
+        "player",
+        "tournament"
+      ]
+    }
+  }
+}
