@@ -12,11 +12,17 @@ const RAW_SOURCE_CACHE_TTL_MS = 5 * 60 * 1000;
 const MAX_SECTIONS = 20;
 const MAX_ITEMS_PER_SECTION = 100;
 const MAX_FETCH_CONCURRENCY = 8;
+const CACHE_VERSION='v3';
+const HEALTH_KEY='sd:health:v3';
+const CACHE_HITS_KEY='sd:metrics:v3:cache:hits';
+const CACHE_MISSES_KEY='sd:metrics:v3:cache:misses';
 
 const SOURCES = require('../config/sources.v1.json');
 const SPORTS_CONFIG = require('../config/sports.v1.json');
 const LEAGUES_CONFIG = require('../config/leagues.v1.json');
 const TYPES_CONFIG = require('../config/content-types.v1.json');
+const {ENABLED:KV_ENABLED,get:kvGet,set:kvSet,incr:kvIncr,hgetall:kvHgetall,hset:kvHset}=require('./lib/redis');
+const {allow:rateLimit}=require('./lib/rate-limit');
 
 const COUNTRY = SOURCES.COUNTRY;
 const LEAGUE = SOURCES.LEAGUE;
@@ -25,11 +31,16 @@ const SPORT_COUNTRIES = SOURCES.SPORT_COUNTRIES;
 const SPORT_LEAGUES = SOURCES.SPORT_LEAGUES;
 const ESPORTS_SITES = SOURCES.ESPORTS_SITES;
 const ESPORTS_RULES = SOURCES.ESPORTS_RULES;
+const LOCALE_RESULT_HINTS = SOURCES.localeResultHints || {};
 
 const memoryNewsCache = globalThis.__SD_NEWS_CACHE_V2 || new Map();
 const rawSourceCache = globalThis.__SD_RAW_SOURCE_CACHE_V2 || new Map();
 globalThis.__SD_NEWS_CACHE_V2 = memoryNewsCache;
 globalThis.__SD_RAW_SOURCE_CACHE_V2 = rawSourceCache;
+const healthMemory=globalThis.__SD_HEALTH_V3 || new Map();
+globalThis.__SD_HEALTH_V3=healthMemory;
+const cacheMetrics=globalThis.__SD_CACHE_METRICS_V3 || {hits:0,misses:0};
+globalThis.__SD_CACHE_METRICS_V3=cacheMetrics;
 const ESPORTS_NOISE=/\b(guides?|walkthrough|builds?|tier list|tier-list|skins?|codes?|redeem|patch notes?|system requirements?|settings?|crosshair|sensitivity|how to|best .* settings|dataminer|datamining)\b|攻略|教學|造型|造型包|配裝|設定|靈敏度|準心|代碼|兌換碼|外掛|洩漏|漏洞/i;
 
 function esportsAccept(title,section,url='',sourceUrl=''){
@@ -130,8 +141,16 @@ function jaccard(a,b){
   return inter/(A.size+B.size-inter);
 }
 
-function classify(title){
+function localeResultSignal(title,league){
+  const hints=Array.isArray(LOCALE_RESULT_HINTS?.[league])?LOCALE_RESULT_HINTS[league]:[];
+  if(!hints.length) return false;
+  const text=String(title||'');
+  return hints.some(x=>text.toLowerCase().includes(String(x).toLowerCase()));
+}
+
+function classify(title,section={}){
   const hits=Object.entries(TYPE).filter(([,r])=>r.test(title)).map(([k])=>k);
+  if(!hits.includes('比賽結果') && localeResultSignal(title,section?.league)) hits.unshift('比賽結果');
   const out=hits.length?hits:['其他重要新聞'];
   if(out.includes('傷勢更新') && out.includes('受傷')) out.splice(out.indexOf('受傷'),1);
   if(out.includes('世界／聯盟紀錄') && out.includes('生涯紀錄')) out.splice(out.indexOf('生涯紀錄'),1);
@@ -144,25 +163,10 @@ function selectedTypes(section){
   if(typeof raw==='string'&&raw.trim()) return [raw.trim()];
   return ['全部'];
 }
-
-// NPB 日本語記事は「試合結果」「勝利」「敗戦」など結果語が見出しに現れやすく、
-// 英語中心の共通 TYPE regex だけでは「比賽結果」に分類できない場合がある。
-// ここでは NPB のみ日本語結果語を補完し、他のスポーツの挙動は変更しない。
-function npbResultSignal(title){
-  const s=String(title||'');
-  return /試合結果|試合終了|試合速報|勝利|敗戦|勝った|敗れた|勝ち|敗れ|勝投手|敗投手|サヨナラ|延長戦|スコア|\b\d+\s*[-－ー]\s*\d+\b/i.test(s);
-}
-function classifyForSection(title,section){
-  const hits=classify(title);
-  if(section?.sport==='棒球' && section?.league==='NPB' && npbResultSignal(title) && !hits.includes('比賽結果')){
-    hits.unshift('比賽結果');
-  }
-  return hits;
-}
 function typeAccept(title,section){
   const wanted=selectedTypes(section);
   if(!wanted.length||wanted.includes('全部')) return true;
-  const hits=classifyForSection(title,section);
+  const hits=classify(title,section);
   return wanted.some(t=>hits.includes(t));
 }
 
@@ -180,6 +184,19 @@ function parseRss(xml,lang){
     if(title&&link)out.push({title,url:link,sourceName:source,sourceUrl,publishedAt:parseDate(pub),language:lang});
   }
   return out;
+}
+
+async function updateHealth(id,patch){
+  const now=new Date().toISOString();
+  const current=healthMemory.get(id)||{id,success:0,fail:0,lastSuccess:null,lastFailure:null,lastError:null,updatedAt:null};
+  const next={...current,...patch,updatedAt:now};
+  healthMemory.set(id,next);
+  try{ await kvHset(HEALTH_KEY,id,JSON.stringify(next)); }catch(_){}
+}
+
+async function noteCacheMetric(kind){
+  if(kind==='hit')cacheMetrics.hits++; else cacheMetrics.misses++;
+  try{ await kvIncr(kind==='hit'?CACHE_HITS_KEY:CACHE_MISSES_KEY,30*24*60*60*1000); }catch(_){}
 }
 
 async function fetchText(url,ms=SOURCE_TIMEOUT_MS){
@@ -209,9 +226,6 @@ function queryFor(section,cfg,batchIndex=0,useSites=true){
   const start=(Number(batchIndex)||0)*8;
   const batchTerms=terms.slice(start,start+8);
   const t=(batchTerms.length?batchTerms:terms.slice(0,8)).map(x=>`"${x}"`).join(' OR ');
-  const npbResultHint=(sport==='棒球' && league==='NPB' && selectedTypes(section).includes('比賽結果'))
-    ? ' ("試合結果" OR 勝利 OR 敗戦 OR 試合終了 OR スコア)'
-    : '';
   let domains=[];
   if(ESPORTS_SITES[league]) domains=ESPORTS_SITES[league];
   else if(sport==='電競') domains=Object.values(ESPORTS_SITES).flat();
@@ -219,7 +233,7 @@ function queryFor(section,cfg,batchIndex=0,useSites=true){
   domains=[...new Set(domains)].slice(0,8);
   const sites=domains.map(x=>`site:${x}`).join(' OR ');
   const age=Math.min(7,Math.max(1,Math.ceil((Number(section.hours)||24)/24)));
-  return useSites&&sites?`(${t})${npbResultHint} (${sites}) when:${age}d`:`(${t})${npbResultHint} when:${age}d`;
+  return useSites&&sites?`(${t}) (${sites}) when:${age}d`:`(${t}) when:${age}d`;
 }
 
 function countryList(section){
@@ -254,7 +268,7 @@ function leagueAccept(title,section,url='',sourceUrl=''){
 }
 
 function buildArticle(raw,section){
-  const eventTypes=classify(raw.title);
+  const eventTypes=classify(raw.title,section);
   const stableId='n-'+Buffer.from(`${raw.url||raw.title||''}`).toString('base64url').slice(0,48);
   return {id:stableId,...raw,sectionId:section.id,sport:section.sport,league:section.league,eventType:eventTypes[0],eventTypes,eventId:`${section.sport}|${section.league}|${norm(raw.title)}`,sourceCount:1,languages:[raw.language],relatedSources:[raw.sourceName]};
 }
@@ -317,6 +331,7 @@ function applyHeat(items){
 function cacheKey(section){
   const types=selectedTypes(section).map(String).sort();
   return JSON.stringify({
+    cacheVersion:CACHE_VERSION,
     v:CONFIG_VERSION,
     sport:String(section?.sport||''),
     league:String(section?.league||''),
@@ -324,19 +339,45 @@ function cacheKey(section){
     hours:Number(section?.hours)||24
   });
 }
-function cacheGet(key){
-  const hit=memoryNewsCache.get(key);
-  if(!hit)return null;
-  const ttl=hit.items?.length?SECTION_CACHE_TTL_MS:EMPTY_CACHE_TTL_MS;
-  if(Date.now()-hit.time>ttl){memoryNewsCache.delete(key);return null;}
-  return hit.value;
+
+async function cacheGet(key){
+  const memory=memoryNewsCache.get(key);
+  if(memory){
+    const ttl=memory.items?.length?SECTION_CACHE_TTL_MS:EMPTY_CACHE_TTL_MS;
+    if(Date.now()-memory.time<=ttl){ await noteCacheMetric('hit'); return memory.value; }
+    memoryNewsCache.delete(key);
+  }
+  if(KV_ENABLED){
+    try{
+      const raw=await kvGet(`sd:news:v3:${Buffer.from(key).toString('base64url')}`);
+      if(raw){
+        const value=JSON.parse(raw);
+        const ttl=value?.items?.length?SECTION_CACHE_TTL_MS:EMPTY_CACHE_TTL_MS;
+        // Redis TTL is authoritative; this guard is only for malformed legacy values.
+        if(value && Date.parse(value.fetchedAt) && Date.now()-Date.parse(value.fetchedAt)<=Math.max(ttl,5*60*1000)) {
+          memoryNewsCache.set(key,{time:Date.now(),items:value.items||[],value});
+          await noteCacheMetric('hit');
+          return value;
+        }
+      }
+    }catch(_){}
+  }
+  await noteCacheMetric('miss');
+  return null;
 }
-function cacheSet(key,value){
+
+async function cacheSet(key,value){
   memoryNewsCache.set(key,{time:Date.now(),items:value.items||[],value});
   while(memoryNewsCache.size>120){
     const first=memoryNewsCache.keys().next().value;
     if(first===undefined)break;
     memoryNewsCache.delete(first);
+  }
+  if(KV_ENABLED){
+    try{
+      const ttl=value?.items?.length?SECTION_CACHE_TTL_MS:EMPTY_CACHE_TTL_MS;
+      await kvSet(`sd:news:v3:${Buffer.from(key).toString('base64url')}`,JSON.stringify(value),ttl);
+    }catch(_){}
   }
 }
 
@@ -352,7 +393,7 @@ async function mapConcurrent(items,limit,fn){
 
 async function one(section){
   const key=cacheKey(section);
-  const cached=section.forceRefresh ? null : cacheGet(key);
+  const cached=section.forceRefresh ? null : await cacheGet(key);
   if(cached)return {...cached,cacheHit:true};
 
   const countries=countryList(section);
@@ -372,14 +413,25 @@ async function one(section){
     try{
       const primary=await fetchText(url1,SOURCE_TIMEOUT_MS);
       let parsed=primary?parseRss(primary,cfg.market):[];
-      if(!parsed.length){
+      if(parsed.length){
+        await updateHealth(`market:${code}`,{success:(healthMemory.get(`market:${code}`)?.success||0)+1,lastSuccess:new Date().toISOString(),lastError:null});
+      }else{
+        await updateHealth(`market:${code}`,{success:(healthMemory.get(`market:${code}`)?.success||0)+1,lastSuccess:new Date().toISOString(),lastError:null});
         const url2=googleUrl(queryFor({...section,hours:Math.min(168,hours)},cfg,batch,false),cfg.market);
         const fallback=await fetchText(url2,SOURCE_TIMEOUT_MS).catch(()=>null);
         if(fallback)parsed=parseRss(fallback,cfg.market);
       }
+      for(const item of parsed){
+        const publisher=domainOf(item.sourceUrl)||String(item.sourceName||'unknown').toLowerCase();
+        const h=healthMemory.get(`publisher:${publisher}`)||{id:`publisher:${publisher}`,success:0,fail:0,lastSuccess:null,lastFailure:null,lastError:null,updatedAt:null};
+        void updateHealth(`publisher:${publisher}`,{success:h.success+1,lastSuccess:new Date().toISOString(),lastError:null});
+      }
       return {code,items:parsed,error:null};
     }catch(e){
-      return {code,items:[],error:String(e?.message||e)};
+      const msg=String(e?.message||e);
+      const h=healthMemory.get(`market:${code}`)||{success:0,fail:0};
+      await updateHealth(`market:${code}`,{fail:(h.fail||0)+1,lastFailure:new Date().toISOString(),lastError:msg});
+      return {code,items:[],error:msg};
     }
   });
 
@@ -391,7 +443,7 @@ async function one(section){
       const ts=Date.parse(raw.publishedAt); if(!Number.isFinite(ts))continue;
       if(Date.now()-ts>hours*3600000)continue;
       const title=raw.title;
-      const types=classifyForSection(title,section);
+      const types=classify(title);
       if(!typeAccept(title,section))continue;
       if(LOW_VALUE.test(title)&&types[0]==='其他重要新聞')continue;
       if(sport==='電競'){
@@ -419,8 +471,36 @@ async function one(section){
       return {...rest,eventCount:_clusterArticles||1};
     });
   const value={items,count:items.length,errors,fetchedAt:new Date().toISOString(),configVersion:CONFIG_VERSION,heatAlgorithmVersion:HEAT_ALGORITHM_VERSION};
-  cacheSet(key,value);
+  await cacheSet(key,value);
   return value;
+}
+
+async function healthSnapshot(){
+  const rows=new Map();
+  for(const [id,v] of healthMemory) rows.set(id,v);
+  if(KV_ENABLED){
+    try{
+      const arr=await kvHgetall(HEALTH_KEY);
+      if(Array.isArray(arr)){
+        for(let i=0;i<arr.length;i+=2){
+          const id=String(arr[i]||'');
+          if(!id)continue;
+          try{ rows.set(id,{...JSON.parse(String(arr[i+1]||'{}'))}); }catch(_){}
+        }
+      }
+    }catch(_){}
+  }
+  const list=[...rows.values()].map(x=>({
+    ...x,
+    success:Number(x.success||0),
+    fail:Number(x.fail||0),
+    successRate:(Number(x.success||0)+Number(x.fail||0))?Math.round(Number(x.success||0)/(Number(x.success||0)+Number(x.fail||0))*100):null
+  })).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+  let cacheHits=cacheMetrics.hits, cacheMisses=cacheMetrics.misses;
+  if(KV_ENABLED){
+    try{ const [h,m]=await Promise.all([kvGet(CACHE_HITS_KEY),kvGet(CACHE_MISSES_KEY)]); if(h!=null)cacheHits=Number(h)||0; if(m!=null)cacheMisses=Number(m)||0; }catch(_){}
+  }
+  return {version:'health-v3',generatedAt:new Date().toISOString(),kvEnabled:KV_ENABLED,cache:{hits:cacheHits,misses:cacheMisses,hitRate:(cacheHits+cacheMisses)?Math.round(cacheHits/(cacheHits+cacheMisses)*100):null},sources:list};
 }
 
 const CONTRACT_REQUIRED_ITEM_FIELDS=['id','title','url','sourceName','publishedAt','sport','league','eventType','eventTypes','sourceCount','languages','relatedSources','heat','sectionId'];
@@ -439,6 +519,8 @@ function validateContractPayload(d){
   return {ok:true};
 }
 
+module.exports.__health=healthSnapshot;
+
 module.exports = async (req,res)=>{
   res.setHeader('Access-Control-Allow-Origin','*');
   res.setHeader('Access-Control-Allow-Methods','POST,OPTIONS');
@@ -446,6 +528,11 @@ module.exports = async (req,res)=>{
   res.setHeader('Cache-Control','no-store, no-cache, must-revalidate');
   if(req.method==='OPTIONS')return res.status(200).end();
   if(req.method!=='POST')return res.status(405).json({error:'POST only',contractVersion:API_CONTRACT_VERSION});
+  const cronInternal=String(req.headers?.['x-internal-cron']||'')==='1' && (!process.env.CRON_SECRET || String(req.headers?.authorization||'')===`Bearer ${process.env.CRON_SECRET}`);
+  if(!cronInternal){
+    const rl=await rateLimit(req,'news',20,60000);
+    if(!rl.ok)return res.status(429).json({version:'vercel-news-v3',configVersion:CONFIG_VERSION,contractVersion:API_CONTRACT_VERSION,items:[],count:0,errors:[`rate_limit_exceeded:${rl.limit}/min`],fetchedAt:new Date().toISOString()});
+  }
   try{
     const forceRefresh=Boolean(req.body?.forceRefresh);
     const sections=Array.isArray(req.body?.sections)?req.body.sections.slice(0,MAX_SECTIONS).map(s=>({...s,forceRefresh})):[];
@@ -459,16 +546,16 @@ module.exports = async (req,res)=>{
         if(r.value.cacheHit)cacheHits.push(s.id||`${s.sport}/${s.league}`);
       }else errors.push(`${s.sport||''}/${s.league||''}: ${String(r.reason?.message||r.reason)}`);
     });
-    const payload={version:'vercel-news-v2',configVersion:CONFIG_VERSION,contractVersion:API_CONTRACT_VERSION,heatAlgorithmVersion:HEAT_ALGORITHM_VERSION,fetchedAt:new Date().toISOString(),items,count:items.length,errors,cacheHits};
+    const payload={version:'vercel-news-v3',configVersion:CONFIG_VERSION,contractVersion:API_CONTRACT_VERSION,heatAlgorithmVersion:HEAT_ALGORITHM_VERSION,fetchedAt:new Date().toISOString(),items,count:items.length,errors,cacheHits};
     const check=validateContractPayload(payload);
     if(!check.ok)return res.status(500).json({error:'contract_violation',detail:check.reason,contractVersion:API_CONTRACT_VERSION,items:[],count:0,errors:[check.reason],fetchedAt:new Date().toISOString()});
     return res.status(200).json(payload);
   }catch(e){
-    return res.status(500).json({version:'vercel-news-v2',configVersion:CONFIG_VERSION,contractVersion:API_CONTRACT_VERSION,items:[],count:0,errors:[String(e?.message||e)],fetchedAt:new Date().toISOString()});
+    return res.status(500).json({version:'vercel-news-v3',configVersion:CONFIG_VERSION,contractVersion:API_CONTRACT_VERSION,items:[],count:0,errors:[String(e?.message||e)],fetchedAt:new Date().toISOString()});
   }
 };
 
 if(process.env.NEWS_AUDIT_EXPORT==='1') module.exports.__audit={
-  COUNTRY,LEAGUE,PACK,SPORT_COUNTRIES,SPORT_LEAGUES,ESPORTS_SITES,ESPORTS_RULES,TYPE,classify,classifyForSection,npbResultSignal,typeAccept,selectedTypes,queryFor,leagueAccept,esportsAccept,countryList,
-  SPORTS_CONFIG,LEAGUES_CONFIG,TYPES_CONFIG,CONFIG_VERSION,API_CONTRACT_VERSION,HEAT_ALGORITHM_VERSION,validateContractPayload
+  COUNTRY,LEAGUE,PACK,SPORT_COUNTRIES,SPORT_LEAGUES,ESPORTS_SITES,ESPORTS_RULES,TYPE,classify,typeAccept,selectedTypes,queryFor,leagueAccept,esportsAccept,countryList,
+  SPORTS_CONFIG,LEAGUES_CONFIG,TYPES_CONFIG,CONFIG_VERSION,API_CONTRACT_VERSION,HEAT_ALGORITHM_VERSION,validateContractPayload,LOCALE_RESULT_HINTS,CACHE_VERSION,KV_ENABLED,healthSnapshot,cacheKey,localeResultSignal
 };

@@ -1,9 +1,11 @@
 // Vercel Serverless Function: robust title translation for 運動小日報.
 // Design goals: never expose provider errors, use explicit source languages,
+// protect the public endpoint with a lightweight per-IP rate limit.
 // reuse warm-instance cache, and translate several titles concurrently.
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const CACHE_MAX = 500;
+const {allow:rateLimit}=require('./lib/rate-limit');
 const memoryCache = globalThis.__SD_TRANSLATION_CACHE || new Map();
 globalThis.__SD_TRANSLATION_CACHE = memoryCache;
 
@@ -180,6 +182,10 @@ module.exports=async(req,res)=>{
 
   if(req.method==='OPTIONS') return res.status(200).end();
   if(req.method!=='POST') return res.status(405).json({error:'POST only'});
+  const rl=await rateLimit(req,'translate',30,60000);
+  if(!rl.ok){
+    return res.status(200).json({error:'translation_rate_limited',translations:[],requested:0,translated:0,version:'title-zh-tw-6'});
+  }
 
   try{
     const raw=Array.isArray(req.body?.texts)?req.body.texts:[];
@@ -191,7 +197,7 @@ module.exports=async(req,res)=>{
       translations,
       requested:texts.length,
       translated,
-      version:'title-zh-tw-5'
+      version:'title-zh-tw-6'
     });
   }catch(_){
     return res.status(200).json({
@@ -199,7 +205,7 @@ module.exports=async(req,res)=>{
       translations:[],
       requested:0,
       translated:0,
-      version:'title-zh-tw-5'
+      version:'title-zh-tw-6'
     });
   }
 };
