@@ -1879,5 +1879,61 @@
         "tournament"
       ]
     }
+  },
+  "localeResultHints": {
+    "NPB": [
+      "試合結果",
+      "試合終了",
+      "試合速報",
+      "勝利",
+      "敗戦",
+      "勝った",
+      "敗れた",
+      "サヨナラ",
+      "スコア",
+      "勝投手",
+      "敗投手"
+    ],
+    "KBO": [
+      "경기결과",
+      "경기 결과",
+      "승리",
+      "패배",
+      "승리했다",
+      "패배했다",
+      "끝내기",
+      "스코어"
+    ],
+    "CPBL": [
+      "比賽結果",
+      "比賽結束",
+      "勝利",
+      "敗戰",
+      "擊敗",
+      "再見安打",
+      "比分"
+    ],
+    "MLB": [
+      "game result",
+      "final score",
+      "box score"
+    ],
+    "NBA": [
+      "final score",
+      "game result",
+      "box score"
+    ],
+    "NHL": [
+      "final score",
+      "game result",
+      "overtime win",
+      "shutout"
+    ],
+    "F1": [
+      "race result",
+      "finish",
+      "winner",
+      "podium"
+    ]
   }
 }
