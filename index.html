@@ -10,6 +10,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <title>運動小日報</title>
+<!-- UI hotfix 4.2.0: responsive highlights + cache-safe translation fallback -->
 <style>
 :root{--bg:#f5f7fa;--card:#fff;--text:#121826;--muted:#667085;--line:#e4e7ec;--brand:#111827;--soft:#eef2f6;--blue:#2457d6}
 *{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
@@ -112,8 +113,91 @@ html[data-input="touch"] .mini-btn{touch-action:manipulation;}
   *,*::before,*::after{scroll-behavior:auto !important;transition:none !important;}
 }
 
+
+/* === v4.1.5 最終手機版面保險 ===
+   無論舊版／新版 highlight HTML 結構，都用卡片內的唯一按鈕 ID 鎖定五大頭條。
+   避免舊快取或舊 DOM 的 .row/.toolbar 規則再次把內容拆成左右欄。 */
+.card:has(#speakHighlightsBtn){
+  min-width:0 !important;
+  max-width:100% !important;
+  width:100% !important;
+  overflow:hidden !important;
+}
+.card:has(#speakHighlightsBtn) .row,
+.card:has(#speakHighlightsBtn) .highlight-head{
+  display:block !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+}
+.card:has(#speakHighlightsBtn) .highlight-heading{
+  display:block !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+}
+.card:has(#speakHighlightsBtn) .highlight-toolbar,
+.card:has(#speakHighlightsBtn) .toolbar:first-of-type{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:8px !important;
+  width:100% !important;
+  margin-top:10px !important;
+  min-width:0 !important;
+}
+.card:has(#speakHighlightsBtn) .highlight-toolbar .btn,
+.card:has(#speakHighlightsBtn) .toolbar:first-of-type .btn{
+  width:100% !important;
+  min-width:0 !important;
+  min-height:44px !important;
+  white-space:normal !important;
+}
+.card:has(#speakHighlightsBtn) .highlight-grid{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  margin-top:12px !important;
+}
+.card:has(#speakHighlightsBtn) .highlight-item{
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+}
+.card:has(#speakHighlightsBtn) .article-actions{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+.card:has(#speakHighlightsBtn) .highlight-history-toolbar{
+  display:block !important;
+  width:100% !important;
+  margin-top:10px !important;
+}
+.card:has(#speakHighlightsBtn) .highlight-history-toolbar .btn,
+.card:has(#speakHighlightsBtn) #historyBtn{
+  width:100% !important;
+  min-height:44px !important;
+}
+@media(max-width:1030px){
+  .card:has(#speakHighlightsBtn) h2{overflow-wrap:anywhere !important;}
+  .card:has(#speakHighlightsBtn) .muted,
+  .card:has(#speakHighlightsBtn) .reason,
+  .card:has(#speakHighlightsBtn) b,
+  .card:has(#speakHighlightsBtn) span,
+  .card:has(#speakHighlightsBtn) a,
+  .card:has(#speakHighlightsBtn) button{
+    overflow-wrap:anywhere;
+  }
+  .card:has(#speakHighlightsBtn) .highlight-item{
+    font-size:inherit;
+  }
+}
 </style>
-<link rel="stylesheet" href="/mobile.css?v=20260918"><!-- mobile responsive + font fixes -->
+<link rel="stylesheet" href="/mobile.css?v=20260918-r6"><!-- mobile responsive + font fixes -->
 </head>
 <body>
 <div class="app">
@@ -589,7 +673,7 @@ async function loadHistory(){
 function highlightHtml(){
   const data=highlightsState.data;
   const items=Array.isArray(data?.items)?data.items:[];
-  return `<div class="card highlight-card">
+  return `<div class="card highlight-card highlights-shell" data-layout="highlights">
     <div class="highlight-head">
       <div class="highlight-heading">
         <h2>⚡ 今日五大頭條</h2>
@@ -866,7 +950,7 @@ function home(){
   return `
   <div class="card">
     <div class="row">
-      <div><h2>運動小日報</h2><div class="muted">今天有 ${total} 則整理後的新聞</div><div class="update-time">${esc(time)}</div></div>
+      <div><h2>運動小日報</h2><div class="muted">${sections.length?`今天有 ${total} 則整理後的新聞`:`尚未建立日報分區`}</div><div class="update-time">${esc(time)}</div></div>
       <button class="btn primary" onclick="loadNews(true)">更新</button>
     </div>
   </div>
@@ -1295,7 +1379,7 @@ async function testHealthEndpoint(){
   try{
     const r=await fetch('/api/health',{cache:'no-store'});
     const d=await r.json().catch(()=>({}));
-    const ok=r.ok&&d&&d.version==='health-v3'&&d.cache&&Array.isArray(d.sources);
+    const ok=r.ok&&d&&d.version==='health-v5'&&d.cache&&Array.isArray(d.sources);
     return ok?{name:'來源健康度',status:'ok',detail:`Health API 正常；KV ${d.kvEnabled?'已設定':'未設定 fallback'}`}:{name:'來源健康度',status:'bad',detail:'Health API 回傳格式異常'};
   }catch(e){return {name:'來源健康度',status:'bad',detail:String(e?.message||e)};}
 }
@@ -1401,7 +1485,10 @@ async function translateBatch(texts){
   });
   if(missing.length){
     try{
-      const r=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:missing}),cache:'no-store'});
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),12000);
+      const r=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:missing}),cache:'no-store',signal:controller.signal});
+      clearTimeout(timer);
       const d=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error(d.error||`HTTP ${r.status}`);
       const out=Array.isArray(d.translations)?d.translations:[];
