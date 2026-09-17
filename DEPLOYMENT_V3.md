@@ -34,7 +34,7 @@ CRON_SECRET
 
 ## Cron
 
-vercel.json 已設定 /api/cron，每 15 分鐘一個排程設定。請以你的 Vercel 方案實際支援頻率為準；部署後到 Vercel Cron 頁面確認是否已註冊。
+GitHub Actions 以每 15 分鐘排程呼叫 /api/cron；Vercel Hobby 不使用高頻 vercel.json Cron。詳見 CRON_HOBBY_SETUP.md。
 
 ## 第一次部署後驗收
 

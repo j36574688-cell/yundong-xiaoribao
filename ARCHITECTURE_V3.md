@@ -12,7 +12,7 @@
 4. localeResultHints：NPB、KBO 等多語言賽果訊號由 config 管理，避免 per-league regex 散落在核心程式。
 5. Source Health：新增 /api/health，觀察市場通道／發布來源的成功、失敗、最近錯誤與快取命中率。
 6. Rate limit：/api/news、/api/translate、/api/health 使用 per-IP 限制；Redis 可用時持久化計數，不可用時使用記憶體 fallback。
-7. Background warm-up：新增 /api/cron 與 vercel.json，預抓常用 section。
+7. Background warm-up：新增 /api/cron，並由外部排程預抓常用 section。
 8. PWA：manifest.json、service worker、離線時保留前一次成功新聞資料。
 9. Auto Test 擴充：加入 v3 static checks，驗證 locale hints、cache version、PWA、health、cron、rate-limit 與 Redis fallback 結構。
 
