@@ -1,0 +1,100 @@
+/* 運動小日報：手機版版面與字體修正 */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+.btn,
+.mini-btn,
+.nav {
+  font-family: inherit;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.empty-mini,
+.section-empty {
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  color: var(--muted) !important;
+}
+
+@media (max-width: 699px) {
+  .content,
+  .card,
+  .row,
+  .toolbar,
+  .searchbar {
+    min-width: 0;
+  }
+
+  .card {
+    overflow: hidden;
+  }
+
+  .row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .row > div:first-child {
+    min-width: 0;
+    flex: 1 1 220px;
+  }
+
+  .btn {
+    min-height: 44px;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .mini-btn {
+    min-height: 40px;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  /* 今日五大頭條：手機版按鈕固定兩欄，避免擠成一排 */
+  #speakHighlightsBtn,
+  #stopSpeechBtn,
+  #highlightRefreshBtn {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+
+  #historyBtn {
+    width: 100%;
+  }
+
+  .searchbar {
+    align-items: stretch;
+  }
+
+  .searchbar input {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .searchbar .btn {
+    flex: 0 0 auto;
+  }
+
+  h2,
+  h3,
+  b,
+  .muted,
+  .section-title,
+  .section-meta,
+  .test-title,
+  .block-title,
+  .block-count {
+    overflow-wrap: anywhere;
+  }
+}

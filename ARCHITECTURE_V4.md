@@ -5,7 +5,7 @@
 ## 新增核心
 - cross-sport highlights x1：從既有 section 快取與 warm sections 取候選，不直接跨聯盟比較原始 heat。
 - 每聯盟先轉百分位，再跨運動比較；五大頭條同 sport 最多 2 篇。
-- Highlights KV 歷史保存 30 天，背景排程每 15 分鐘重算。
+- Highlights KV 歷史保存 30 天，Cron 每 15 分鐘背景重算。
 - Heat v2：在保留 v1 實作供對照的前提下，加入來源權威度權重。
 
 ## 使用者體驗

@@ -7,7 +7,7 @@
 - NPB/KBO localeResultHints
 - Source Health dashboard + /api/health
 - /api/news、/api/translate、/api/health per-IP rate limit
-- 外部排程 /api/cron warm-up
+- Vercel Cron /api/cron warm-up
 - PWA manifest + service worker + 192/512 icon
 - v3 自動檢查腳本
 - package.json 升級為 3.0.0

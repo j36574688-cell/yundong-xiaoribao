@@ -36,11 +36,17 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:17px;margin:0 0 6px}.count{font-si
 
 .searchbar{display:flex;gap:8px;margin-top:10px}.searchbar input{flex:1}.highlight-grid{display:grid;gap:10px;margin-top:12px}.highlight-item{padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff}.rank{font-size:12px;font-weight:900;margin-right:6px}.reason{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4}.article-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.mini-btn{border:1px solid var(--line);background:#f8fafc;border-radius:10px;padding:7px 9px;font-size:12px;font-weight:750;cursor:pointer}.mini-btn.saved{background:#fff7d6;border-color:#f3dfad}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.history-list{display:grid;gap:8px;margin-top:10px}.history-row{padding:10px;border:1px solid var(--line);border-radius:12px;background:#fff}.keyword-help{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4}.offline-badge{display:inline-flex;padding:4px 8px;border-radius:999px;background:#fff3cd;color:#8a5a00;font-size:11px;font-weight:800}
 </style>
+<link rel="stylesheet" href="/mobile.css?v=20260917"><!-- mobile responsive + font fixes -->
 </head>
 <body>
 <div class="app">
 <header class="top"><div class="title">運動小日報</div><div class="sub">每天幫你整理一下今天的運動</div></header>
-<main id="main" class="content"></main>
+<main id="main" class="content">
+  <div id="bootFallback" class="card">
+    <h2>運動小日報</h2>
+    <div class="muted">正在載入新聞引擎…</div>
+  </div>
+</main>
 </div>
 <nav class="bottom"><div class="navs">
 <button class="nav active" data-page="home">🏠<br>首頁</button>
@@ -57,6 +63,15 @@ const API_TIMEOUT=45000;
 const AUTO_TEST_TIMEOUT=90000;
 const CONFIG_VERSION="1.0.0";
 const NEWS_BROWSER_CACHE_TTL=5*60*1000;
+
+function safeLocalJSON(key,fallback){
+  try{
+    const raw=localStorage.getItem(key);
+    if(raw===null||raw==="")return fallback;
+    const parsed=JSON.parse(raw);
+    return parsed==null?fallback:parsed;
+  }catch(_){return fallback;}
+}
 let autoTestState={running:false,done:0,total:0,results:[]};
 let healthState={loading:false,data:null,error:""};
 let translateTitles=localStorage.getItem("sd_translate_titles")!=="0";
@@ -190,7 +205,10 @@ KBO:["LG Twins","Doosan Bears","Samsung Lions","SSG Landers","KT Wiz","KIA Tiger
 CPBL:["統一獅","中信兄弟","樂天桃猿","味全龍","富邦悍將","台鋼雄鷹","Uni-Lions","CTBC Brothers","Rakuten Monkeys","Wei Chuan Dragons","Fubon Guardians","TSG Hawks"]
 };
 
-let sections=JSON.parse(localStorage.getItem("sd_sections")||"[]").map(normalizeSection);
+const storedSections=safeLocalJSON("sd_sections",[]);
+const storedSavedIds=safeLocalJSON("sd_saved_ids",[]);
+const storedSeenIds=safeLocalJSON("sd_seen_ids",[]);
+let sections=(Array.isArray(storedSections)?storedSections:[]).map(s=>{try{return normalizeSection(s||{});}catch(_){return null;}}).filter(Boolean);
 let newsBySection={};
 let lastUpdated=localStorage.getItem("sd_last_updated")||"";
 let page="home";
@@ -198,11 +216,11 @@ let status="";
 let highlightsState={loading:false,data:null,error:""};
 let historyState={loading:false,data:[],error:""};
 let searchQuery=localStorage.getItem("sd_search_query")||"";
-let savedIds=new Set(JSON.parse(localStorage.getItem("sd_saved_ids")||"[]"));
+let savedIds=new Set(Array.isArray(storedSavedIds)?storedSavedIds:[]);
 let rssMessage="";
 const articleRegistry=new Map();
 const sectionRegistry=new Map();
-let seenIds=new Set(JSON.parse(localStorage.getItem("sd_seen_ids")||"[]"));
+let seenIds=new Set(Array.isArray(storedSeenIds)?storedSeenIds:[]);
 
 function normalizeSection(s){
   const legacyTypes=Array.isArray(s.types)?s.types:["全部"];
@@ -218,7 +236,7 @@ function normalizeSection(s){
 }
 
 function save(){
-  localStorage.setItem("sd_sections",JSON.stringify(sections));
+  try{localStorage.setItem("sd_sections",JSON.stringify(sections));}catch(_){status="本機儲存空間暫時無法使用；本次設定仍可繼續操作";}
 }
 
 function esc(s){
@@ -1182,7 +1200,7 @@ async function testHealthEndpoint(){
   try{
     const r=await fetch('/api/health',{cache:'no-store'});
     const d=await r.json().catch(()=>({}));
-    const ok=r.ok&&d&&d.version==='health-v4'&&d.cache&&Array.isArray(d.sources);
+    const ok=r.ok&&d&&d.version==='health-v3'&&d.cache&&Array.isArray(d.sources);
     return ok?{name:'來源健康度',status:'ok',detail:`Health API 正常；KV ${d.kvEnabled?'已設定':'未設定 fallback'}`}:{name:'來源健康度',status:'bad',detail:'Health API 回傳格式異常'};
   }catch(e){return {name:'來源健康度',status:'bad',detail:String(e?.message||e)};}
 }
@@ -1708,6 +1726,20 @@ window.addEventListener('offline',()=>{status='目前離線；顯示最後一次
 window.addEventListener('online',()=>{status='已恢復網路；可更新最新新聞';render();});
 if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{});}
 
+window.addEventListener("error",e=>{
+  const el=document.getElementById("bootFallback");
+  if(el && !document.getElementById("runtimeErrorCard")){
+    el.id="runtimeErrorCard";
+    el.innerHTML=`<h2>運動小日報</h2><div class="status err">頁面載入遇到問題，已避免白屏。請重新整理；若持續發生，請清除本站資料後再試。</div><button class="btn primary" onclick="location.reload()">重新整理</button>`;
+  }
+});
+window.addEventListener("unhandledrejection",()=>{
+  const el=document.getElementById("bootFallback");
+  if(el && !document.getElementById("runtimeErrorCard")){
+    el.id="runtimeErrorCard";
+    el.innerHTML=`<h2>運動小日報</h2><div class="status err">載入程序發生例外，已避免白屏。請重新整理後再試。</div><button class="btn primary" onclick="location.reload()">重新整理</button>`;
+  }
+});
 render();
 
 loadNews();
