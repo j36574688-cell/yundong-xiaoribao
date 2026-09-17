@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="theme-color" content="#111827">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -35,8 +35,85 @@ h2{font-size:20px;margin:0 0 8px}h3{font-size:17px;margin:0 0 6px}.count{font-si
 @media(min-width:700px){.content{padding:22px}.top{padding-left:22px;padding-right:22px}}
 
 .searchbar{display:flex;gap:8px;margin-top:10px}.searchbar input{flex:1}.highlight-grid{display:grid;gap:10px;margin-top:12px}.highlight-item{padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff}.rank{font-size:12px;font-weight:900;margin-right:6px}.reason{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4}.article-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.mini-btn{border:1px solid var(--line);background:#f8fafc;border-radius:10px;padding:7px 9px;font-size:12px;font-weight:750;cursor:pointer}.mini-btn.saved{background:#fff7d6;border-color:#f3dfad}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.history-list{display:grid;gap:8px;margin-top:10px}.history-row{padding:10px;border:1px solid var(--line);border-radius:12px;background:#fff}.keyword-help{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4}.offline-badge{display:inline-flex;padding:4px 8px;border-radius:999px;background:#fff3cd;color:#8a5a00;font-size:11px;font-weight:800}
+
+/* === v4.1.3 自動設備配置：手機／平板／桌面 === */
+html{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+  overflow-x:hidden;
+}
+body{
+  width:100%;
+  min-width:0;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+button,input,select,textarea{font:inherit;}
+.app{width:min(100%,780px);min-width:0;}
+.card,.row,.toolbar,.searchbar{min-width:0;max-width:100%;}
+.card{overflow:hidden;}
+
+/* 動態設備資訊由 JS 寫入 html[data-device]。CSS 仍以 viewport 為主，JS 只負責裝置能力與細節。 */
+html[data-device="phone"] .content{padding:14px 12px;}
+html[data-device="phone"] .card{border-radius:18px;padding:15px;margin-bottom:12px;}
+html[data-device="phone"] .top{padding:15px 14px 12px;}
+html[data-device="phone"] .title{font-size:clamp(22px,6.4vw,26px);line-height:1.2;}
+html[data-device="phone"] .sub{font-size:clamp(13px,3.7vw,15px);line-height:1.45;}
+html[data-device="phone"] h2{font-size:clamp(20px,5.6vw,22px);line-height:1.3;}
+html[data-device="phone"] h3{font-size:clamp(17px,4.8vw,19px);line-height:1.35;}
+html[data-device="phone"] .muted,
+html[data-device="phone"] .section-meta,
+html[data-device="phone"] .block-count,
+html[data-device="phone"] .update-time{font-size:clamp(13px,3.6vw,15px);line-height:1.45;}
+html[data-device="phone"] .empty-mini,
+html[data-device="phone"] .section-empty{font-size:14px !important;line-height:1.55 !important;}
+html[data-device="phone"] .btn{min-height:44px;padding:10px 14px;white-space:nowrap;}
+html[data-device="phone"] .mini-btn{min-height:40px;padding:8px 10px;}
+
+/* 五大頭條：手機固定成清楚的 2 欄控制區，不讓標題／按鈕互搶寬度。 */
+.highlight-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-width:0;}
+.highlight-heading{min-width:0;flex:1 1 auto;}
+.highlight-toolbar{display:flex;gap:8px;flex-wrap:wrap;flex:0 0 auto;min-width:0;}
+.highlight-toolbar .btn{flex:0 0 auto;}
+.highlight-history-toolbar{margin-top:10px;}
+html[data-device="phone"] .highlight-head{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;}
+html[data-device="phone-compact"] .highlight-head{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;}
+html[data-device="phone"] .highlight-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;}
+html[data-device="phone"] .highlight-toolbar .btn{width:100%;min-width:0;}
+html[data-device="phone"] .highlight-history-toolbar{display:block;width:100%;}
+html[data-device="phone"] .highlight-history-toolbar .btn{width:100%;}
+
+/* 所有主要表單列在窄螢幕都以單欄為基準。 */
+html[data-device="phone"] .row{flex-wrap:wrap;align-items:flex-start;}
+html[data-device="phone"] .row > div:first-child{min-width:0;flex:1 1 220px;}
+html[data-device="phone"] .searchbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;}
+html[data-device="phone"] .searchbar input{min-width:0;width:100%;}
+html[data-device="phone"] .searchbar .btn{width:auto;}
+html[data-device="phone"] .navs{grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;padding-left:8px;padding-right:8px;}
+html[data-device="phone"] .nav{min-width:0;padding-left:4px;padding-right:4px;}
+
+/* 小型手機再縮一點間距，避免任何橫向擠壓。 */
+html[data-device="phone-compact"] .content{padding-left:10px;padding-right:10px;}
+html[data-device="phone-compact"] .card{padding:13px;border-radius:16px;}
+html[data-device="phone-compact"] .nav{font-size:11px;}
+
+/* 平板：保留卡片式版面，但控制寬度與間距。 */
+html[data-device="tablet"] .content{padding:18px 18px;}
+html[data-device="tablet"] .card{padding:17px;}
+
+/* 觸控裝置：避免文字按鈕被瀏覽器壓縮成小點擊區。 */
+html[data-input="touch"] button,
+html[data-input="touch"] a.btn,
+html[data-input="touch"] .mini-btn{touch-action:manipulation;}
+
+/* 關閉動態效果時保持乾淨、穩定。 */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto !important;transition:none !important;}
+}
+
 </style>
-<link rel="stylesheet" href="/mobile.css?v=20260917"><!-- mobile responsive + font fixes -->
+<link rel="stylesheet" href="/mobile.css?v=20260918"><!-- mobile responsive + font fixes -->
 </head>
 <body>
 <div class="app">
@@ -510,8 +587,26 @@ async function loadHistory(){
   render();
 }
 function highlightHtml(){
-  const data=highlightsState.data; const items=Array.isArray(data?.items)?data.items:[];
-  return `<div class="card"><div class="row"><div><h2>⚡ 今日五大頭條</h2><div class="muted">跨運動獨立精選，不會改動各聯盟原本的 Heat 排序</div></div><div class="toolbar"><button class="btn secondary" id="speakHighlightsBtn">🔊 朗讀</button><button class="btn secondary" id="stopSpeechBtn">⏹ 停止</button><button class="btn secondary" id="highlightRefreshBtn" ${highlightsState.loading?'disabled':''}>${highlightsState.loading?'更新中…':'刷新'}</button></div>${highlightsState.error?`<div class="note err">${esc(highlightsState.error)}</div>`:''}${items.length?`<div class="highlight-grid">${items.map((n,i)=>{const t=String(n.title||'');const zh=!titleNeedsTranslation(t);return `<div class="highlight-item"><div><span class="rank">#${i+1}</span><b>${translateTitles&&!zh?`<span class="translated-title" data-original-title="${esc(t)}">翻譯中…</span>`:esc(t)}</b></div><div class="focus-meta"><span>${esc(n.sport||'')}</span><span>${esc(n.league||'')}</span><span>${esc(n.sourceName||'')}</span><span>Heat ${Math.round(n.heat||0)}</span></div><div class="reason">${esc(n.highlightReason||'跨運動精選')}</div><div class="article-actions"><button class="mini-btn ${isSaved(n)?'saved':''}" onclick="toggleSaved('${esc(n.id)}')">${isSaved(n)?'★ 已收藏':'☆ 收藏'}</button><button class="mini-btn" onclick="shareArticleById('${esc(n.id||'')}')">分享</button><a class="mini-btn" href="${esc(n.url)}" target="_blank" rel="noopener">原文</a></div></div>`}).join('')}</div>`:'<div class="empty-mini">今天暫時沒有可用的五大頭條；可能是快取尚未建立。</div>'}<div class="toolbar"><button class="btn secondary" id="historyBtn">📅 7 日回顧</button></div></div>`;
+  const data=highlightsState.data;
+  const items=Array.isArray(data?.items)?data.items:[];
+  return `<div class="card highlight-card">
+    <div class="highlight-head">
+      <div class="highlight-heading">
+        <h2>⚡ 今日五大頭條</h2>
+        <div class="muted">跨運動獨立精選，不會改動各聯盟原本的 Heat 排序</div>
+      </div>
+      <div class="toolbar highlight-toolbar">
+        <button class="btn secondary" id="speakHighlightsBtn">🔊 朗讀</button>
+        <button class="btn secondary" id="stopSpeechBtn">⏹ 停止</button>
+        <button class="btn secondary" id="highlightRefreshBtn" ${highlightsState.loading?'disabled':''}>${highlightsState.loading?'更新中…':'刷新'}</button>
+      </div>
+    </div>
+    ${highlightsState.error?`<div class="note err">${esc(highlightsState.error)}</div>`:''}
+    ${items.length?`<div class="highlight-grid">${items.map((n,i)=>{const t=String(n.title||'');const zh=!titleNeedsTranslation(t);return `<div class="highlight-item"><div><span class="rank">#${i+1}</span><b>${translateTitles&&!zh?`<span class="translated-title" data-original-title="${esc(t)}">翻譯中…</span>`:esc(t)}</b></div><div class="focus-meta"><span>${esc(n.sport||'')}</span><span>${esc(n.league||'')}</span><span>${esc(n.sourceName||'')}</span><span>Heat ${Math.round(n.heat||0)}</span></div><div class="reason">${esc(n.highlightReason||'跨運動精選')}</div><div class="article-actions"><button class="mini-btn ${isSaved(n)?'saved':''}" onclick="toggleSaved('${esc(n.id)}')">${isSaved(n)?'★ 已收藏':'☆ 收藏'}</button><button class="mini-btn" onclick="shareArticleById('${esc(n.id||'')}')">分享</button><a class="mini-btn" href="${esc(n.url)}" target="_blank" rel="noopener">原文</a></div></div>`}).join('')}</div>`:'<div class="empty-mini">今天暫時沒有可用的五大頭條；可能是快取尚未建立。</div>'}
+    <div class="toolbar highlight-history-toolbar">
+      <button class="btn secondary" id="historyBtn">📅 7 日回顧</button>
+    </div>
+  </div>`;
 }
 function historyHtml(){
   if(!historyState.data.length)return '';
@@ -1065,7 +1160,7 @@ function settings(){
 
   <div class="card">
     <div class="test-title">🧩 系統版本</div>
-    <div class="muted" style="margin-top:4px">新聞引擎 v4 · API Contract ${esc("1.0")} · Config ${esc(CONFIG_VERSION)} · Heat v2 · Cache ${esc("v4")} · Highlights x1</div>
+    <div class="muted" style="margin-top:4px">新聞引擎 v4 · Responsive Auto Config v1.0 · API Contract ${esc("1.0")} · Config ${esc(CONFIG_VERSION)} · Heat v2 · Cache ${esc("v4")} · Highlights x1</div>
   </div>
 
 
@@ -1710,6 +1805,32 @@ async function loadNews(force=false){
   render();
 }
 
+
+/* === 自動設備配置 ===
+   依 viewport 寬度 + 觸控能力 + 裝置像素密度建立穩定的 device profile。
+   不猜特定品牌／型號，避免不同 Android / iOS 機型被誤判。 */
+function applyDeviceProfile(){
+  const root=document.documentElement;
+  const width=Math.max(1, Math.round(window.visualViewport?.width || window.innerWidth || root.clientWidth || 390));
+  const height=Math.max(1, Math.round(window.visualViewport?.height || window.innerHeight || 800));
+  const dpr=window.devicePixelRatio||1;
+  const touch=Number(navigator.maxTouchPoints||0)>0 || 'ontouchstart' in window;
+  let device='desktop';
+  if(width<=399) device='phone-compact';
+  else if(width<=699) device='phone';
+  else if(width<=1023) device='tablet';
+  root.dataset.device=device;
+  root.dataset.input=touch?'touch':'pointer';
+  root.dataset.orientation=width>height?'landscape':'portrait';
+  root.dataset.dpr=dpr>=2?'high':'standard';
+  root.style.setProperty('--device-width',width+'px');
+  root.style.setProperty('--device-height',height+'px');
+  root.style.setProperty('--safe-bottom','env(safe-area-inset-bottom, 0px)');
+}
+applyDeviceProfile();
+window.addEventListener('resize',applyDeviceProfile,{passive:true});
+window.addEventListener('orientationchange',()=>setTimeout(applyDeviceProfile,80),{passive:true});
+if(window.visualViewport)window.visualViewport.addEventListener('resize',applyDeviceProfile,{passive:true});
 
 document
   .querySelectorAll(".nav")

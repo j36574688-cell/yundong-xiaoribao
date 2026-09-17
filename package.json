@@ -1,7 +1,7 @@
 {
   "name": "yundong-xiaoribao",
   "private": true,
-  "version": "4.1.1",
+  "version": "4.1.4",
   "description": "運動小日報：多來源體育新聞、持久化快取、跨運動五大頭條、來源權威度、追蹤、收藏、RSS、歷史回顧、PWA 與自動測試",
   "scripts": {
     "audit": "node scripts/audit.mjs",

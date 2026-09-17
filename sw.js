@@ -1,5 +1,5 @@
-const CACHE='sports-daily-v4.1.2-static';
-const STATIC=['/','/index.html','/manifest.json','/icon-192.png','/icon-512.png','/mobile.css?v=20260917'];
+const CACHE='sports-daily-v4.1.4-static';
+const STATIC=['/','/index.html','/manifest.json','/icon-192.png','/icon-512.png','/mobile.css?v=20260918'];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC)).then(()=>self.skipWaiting()));
 });

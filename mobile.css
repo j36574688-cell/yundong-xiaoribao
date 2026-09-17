@@ -1,4 +1,4 @@
-/* 運動小日報：手機版版面與字體修正 */
+/* 運動小日報：手機版／自動設備配置備援層 v4.1.3 */
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -41,6 +41,7 @@ textarea {
 
   .row {
     flex-wrap: wrap;
+    width: 100%;
     align-items: flex-start;
   }
 
@@ -96,5 +97,107 @@ textarea {
   .block-title,
   .block-count {
     overflow-wrap: anywhere;
+  }
+}
+
+
+/* v4.1.3：即使外部 CSS 延遲，也保持手機版頭條按鈕兩欄。 */
+html[data-device="phone"] .highlight-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;}
+html[data-device="phone"] .highlight-toolbar .btn{width:100%;min-width:0;}
+html[data-device="phone"] .highlight-history-toolbar{width:100%;}
+html[data-device="phone"] .highlight-history-toolbar .btn{width:100%;}
+html[data-device="phone"] .empty-mini,html[data-device="phone"] .section-empty{font-size:14px !important;line-height:1.55 !important;}
+
+
+/* v4.1.4：五大頭條卡片版面鎖定，避免手機／小型手機被任何外部 flex/grid 規則拆成左右欄。 */
+.highlight-card{
+  display:block !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+}
+.highlight-card .highlight-head{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:12px;
+  align-items:start;
+  width:100%;
+  min-width:0;
+}
+.highlight-card .highlight-heading{
+  display:block;
+  width:100%;
+  min-width:0;
+}
+.highlight-card .highlight-toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  min-width:0;
+}
+.highlight-card .highlight-toolbar .btn{
+  min-width:0;
+}
+.highlight-card .highlight-grid{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) !important;
+  width:100% !important;
+  min-width:0 !important;
+  gap:10px;
+}
+.highlight-card .highlight-item{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  overflow:hidden;
+}
+.highlight-card .highlight-history-toolbar{
+  display:block !important;
+  width:100% !important;
+}
+.highlight-card .highlight-history-toolbar .btn{
+  width:100% !important;
+}
+
+@media (max-width:699px){
+  html[data-device="phone"] .highlight-card .highlight-head,
+  html[data-device="phone-compact"] .highlight-card .highlight-head{
+    display:block !important;
+  }
+
+  html[data-device="phone"] .highlight-card .highlight-toolbar,
+  html[data-device="phone-compact"] .highlight-card .highlight-toolbar{
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    width:100% !important;
+    margin-top:10px;
+    gap:8px;
+  }
+
+  html[data-device="phone"] .highlight-card .highlight-toolbar .btn,
+  html[data-device="phone-compact"] .highlight-card .highlight-toolbar .btn{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:44px;
+  }
+
+  html[data-device="phone"] .highlight-card .highlight-grid,
+  html[data-device="phone-compact"] .highlight-card .highlight-grid{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    width:100% !important;
+    margin-top:12px;
+  }
+
+  html[data-device="phone"] .highlight-card .highlight-item,
+  html[data-device="phone-compact"] .highlight-card .highlight-item{
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  html[data-device="phone"] .highlight-card .highlight-history-toolbar,
+  html[data-device="phone-compact"] .highlight-card .highlight-history-toolbar{
+    width:100% !important;
+    margin-top:10px;
   }
 }
