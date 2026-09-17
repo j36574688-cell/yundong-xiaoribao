@@ -1182,7 +1182,7 @@ async function testHealthEndpoint(){
   try{
     const r=await fetch('/api/health',{cache:'no-store'});
     const d=await r.json().catch(()=>({}));
-    const ok=r.ok&&d&&d.version==='health-v3'&&d.cache&&Array.isArray(d.sources);
+    const ok=r.ok&&d&&d.version==='health-v4'&&d.cache&&Array.isArray(d.sources);
     return ok?{name:'來源健康度',status:'ok',detail:`Health API 正常；KV ${d.kvEnabled?'已設定':'未設定 fallback'}`}:{name:'來源健康度',status:'bad',detail:'Health API 回傳格式異常'};
   }catch(e){return {name:'來源健康度',status:'bad',detail:String(e?.message||e)};}
 }
