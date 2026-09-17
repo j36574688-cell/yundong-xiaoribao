@@ -8,13 +8,10 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'GET only' });
-  }
+  if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
   try {
     const rl = await rateLimit(req, 'health', 30, 60000);
-
     if (!rl.ok) {
       return res.status(429).json({
         version: 'health-v5',
@@ -26,25 +23,16 @@ module.exports = async (req, res) => {
       version: 'health-v5',
       generatedAt: new Date().toISOString(),
       kvEnabled: KV_ENABLED,
-      cache: {
-        hits: 0,
-        misses: 0,
-        hitRate: null
-      },
+      cache: { hits: 0, misses: 0, hitRate: null },
       sources: [],
       warning: null
     });
-
   } catch (e) {
     return res.status(200).json({
       version: 'health-v5',
       generatedAt: new Date().toISOString(),
       kvEnabled: KV_ENABLED,
-      cache: {
-        hits: 0,
-        misses: 0,
-        hitRate: null
-      },
+      cache: { hits: 0, misses: 0, hitRate: null },
       sources: [],
       warning: String(e?.message || e)
     });
