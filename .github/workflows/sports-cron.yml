@@ -5,6 +5,9 @@ on:
     - cron: '*/15 * * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   warm-news-cache:
     runs-on: ubuntu-latest
@@ -15,8 +18,37 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           set -euo pipefail
-          test -n "$CRON_SECRET"
-          curl --fail --show-error --silent \
+
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::GitHub secret CRON_SECRET is empty or missing"
+            exit 1
+          fi
+
+          body_file="$(mktemp)"
+          set +e
+          http_code="$(curl --show-error --silent \
             --retry 3 --retry-delay 5 \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            "$CRON_URL"
+            --connect-timeout 10 --max-time 120 \
+            --output "$body_file" \
+            --write-out "%{http_code}" \
+            --header "Accept: application/json" \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            "$CRON_URL")"
+          curl_exit=$?
+          set -e
+
+          echo "Cron URL: $CRON_URL"
+          echo "HTTP status: $http_code"
+          echo "Response body:"
+          cat "$body_file"
+          echo
+
+          if [ "$curl_exit" -ne 0 ]; then
+            echo "::error::curl failed with exit code $curl_exit"
+            exit "$curl_exit"
+          fi
+
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Cron API failed with HTTP $http_code"
+            exit 22
+          fi
